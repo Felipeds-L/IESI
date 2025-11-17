@@ -1,14 +1,13 @@
-import express from 'express';
+// src/interfaces/http/server.ts
 
-const app = express();
+console.log("--- [DEBUG] 1. Carregando server.ts ---");
+
+import { app } from './app'; // <-- A LINHA MAIS IMPORTANTE
+
+console.log("--- [DEBUG] 2. 'app' importado com sucesso ---");
+
 const port = process.env.PORT || 3333;
 
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  return res.json({ message: 'Hello World from IESI backend!' });
-});
-
 app.listen(port, () => {
-  console.log(`🚀 Backend server running on http://localhost:${port}`);
+  console.log(`🚀 HTTP server running on http://localhost:${port}`);
 });
