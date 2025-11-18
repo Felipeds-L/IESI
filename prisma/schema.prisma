@@ -1,4 +1,4 @@
-// backend/prisma/schema.prisma
+// --- CABEÇALHO (O que faltava) ---
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,10 +7,126 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+// ----------------------------------
+// Define o Cargo do Funcionário 
+enum Cargo {
+  ADMINISTRATIVO
+  MEDICO
+  ENFERMEIRO
+}
 
-model User {
+// Modelo Central - O "Cadastro Único"
+model Pessoa {
   id        Int      @id @default(autoincrement())
+  cpf       String   @unique // Identificador principal 
+  nome      String  
   email     String   @unique
-  name      String?
+  password  String   // Precisamos disso para o login 
+  dataNascimento DateTime // 
+  sexo      String?  // 
+  endereco  String?  // 
+  telefone  String?  // 
   createdAt DateTime @default(now())
+
+  // --- Relações de Especialização ---
+  // Uma Pessoa pode ter (ou não) um perfil de Paciente
+  paciente     Paciente?
+  // Uma Pessoa pode ter (ou não) um perfil de Funcionário
+  funcionario  Funcionario?
+}
+
+// Modelo Paciente (Especialização de Pessoa) 
+model Paciente {
+  id       Int     @id @default(autoincrement())
+  
+  // Relação 1-para-1 com Pessoa
+  pessoa   Pessoa  @relation(fields: [pessoaId], references: [id])
+  pessoaId Int     @unique // Garante que um paciente só está ligado a uma pessoa
+
+  convenio   Convenio? @relation(fields: [convenioId], references: [id])
+  convenioId Int?      
+  
+  // Um paciente pode ter vários responsáveis 
+  responsaveis ResponsaveisPaciente[]
+
+  // Um paciente pode ter vários agendamentos 
+  agendamentos Agendamento[]
+}
+
+// Modelo Funcionário (Especialização de Pessoa) 
+model Funcionario {
+  id             Int       @id @default(autoincrement())
+  
+  // Relação 1-para-1 com Pessoa
+  pessoa         Pessoa    @relation(fields: [pessoaId], references: [id])
+  pessoaId       Int       @unique
+  
+  dataAdmissao   DateTime  
+  salario        Float?    
+  cargo          Cargo     
+
+  // Campos específicos (baseado no cargo) 
+  crm            String?   // Apenas para MEDICO
+  coren          String?   // Apenas para ENFERMEIRO
+
+  // Relação muitos-para-muitos com Especialidade 
+  especialidades Especialidade[] @relation("MedicoEspecialidades")
+
+  // Um funcionário (médico) pode ter vários agendamentos
+  agendamentos   Agendamento[]
+  
+  // Auto-relação para hierarquia 
+  supervisor     Funcionario? @relation("Hierarquia", fields: [supervisorId], references: [id])
+  supervisorId   Int?
+  subordinados   Funcionario[] @relation("Hierarquia")
+}
+
+// Modelos auxiliares
+model Especialidade {
+  id    Int    @id @default(autoincrement())
+  nome  String @unique
+
+  // Médicos que possuem essa especialidade
+  medicos Funcionario[] @relation("MedicoEspecialidades")
+}
+
+model Convenio {
+  id    Int    @id @default(autoincrement())
+  nome  String @unique
+
+  pacientes Paciente[]
+}
+
+model ResponsaveisPaciente {
+  id         Int    @id @default(autoincrement())
+  nome       String
+  cpf        String?
+  parentesco String?
+
+  paciente   Paciente @relation(fields: [pacienteId], references: [id])
+  pacienteId Int
+}
+
+model Procedimento {
+  id    Int     @id @default(autoincrement())
+  nome  String  @unique
+  custo Float   
+
+  agendamentos Agendamento[]
+}
+
+model Agendamento {
+  id          Int      @id @default(autoincrement())
+  dataHora    DateTime
+  status      String   // (ex: AGENDADO, REALIZADO, CANCELADO) 
+  custo       Float    
+  pagador     String   // (ex: PACIENTE, CONVENIO) 
+  paciente    Paciente    @relation(fields: [pacienteId], references: [id])
+  pacienteId  Int         
+
+  funcionario Funcionario @relation(fields: [funcionarioId], references: [id])
+  funcionarioId Int       // O médico responsável 
+
+  procedimento Procedimento @relation(fields: [procedimentoId], references: [id])
+  procedimentoId Int      // O serviço (Consulta, Exame) 
 }
