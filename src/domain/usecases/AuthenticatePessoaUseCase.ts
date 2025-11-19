@@ -35,11 +35,13 @@ export class AuthenticatePessoaUseCase {
       throw new Error('Email ou senha incorretos.');
     }
 
-    // 3. Gerar o Token JWT
-    // O 'segredo' deve ir para o .env em produção, mas vamos usar um fixo por enquanto
-    const token = sign({}, 'segredo_super_secreto_do_iesi', {
-      subject: String(pessoa.id), // Quem é o dono do token? (ID da pessoa)
-      expiresIn: '1d', // O token vale por 1 dia
+    if (!process.env.JWT_SECRET) {
+      throw new Error('Erro interno: JWT_SECRET não está definido no .env');
+    }
+
+    const token = sign({}, process.env.JWT_SECRET, { // <--- Agora lê do .env
+      subject: String(pessoa.id),
+      expiresIn: '1d',
     });
 
     // 4. Tentar descobrir o cargo (se for funcionário) para facilitar pro Front
