@@ -8,7 +8,7 @@ export class UpdatePessoaUseCase {
 
   async execute(id: string, data: Partial<CreatePessoaDTO>) {
     // Implementar validações e lógica de atualização conforme necessário
-    const pessoa = await this.pessoaRepository.update(id, data);
+    const pessoa = await this.pessoaRepository.update(parseInt(id), data);
     return pessoa;
   }
 }

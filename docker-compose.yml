@@ -1,6 +1,6 @@
 services:
   postgres_db:
-    image: postgres:latest
+    image: postgres:15-alpine
     container_name: iesi_postgres
     restart: always
     ports:
@@ -10,17 +10,44 @@ services:
       - POSTGRES_PASSWORD=docker
       - POSTGRES_DB=iesi_db
     volumes:
-      - ./backend/pgdata:/var/lib/postgresql
+      - ./backend/pgdata:/var/lib/postgresql/data # Ajustei para salvar na pasta data correta
+    # Healthcheck: Garante que o banco aceita conexões antes do back tentar conectar
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docker -d iesi_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend_app:
+    build:
+      context: ./backend # Aponta para a pasta do back
+      dockerfile: Dockerfile
+    container_name: iesi_backend
+    restart: always
+    ports:
+      - "3000:3000" # Porta da sua API
+    depends_on:
+      postgres_db:
+        condition: service_healthy # Espera o healthcheck do banco dar OK
+    environment:
+      # Conexão interna do Docker. 
+      # O host é o nome do serviço: 'postgres_db'
+      - DATABASE_URL=postgresql://docker:docker@postgres_db:5432/iesi_db?schema=public
+      - PORT=3000
+      - JWT_SECRET=sua_chave_secreta_super_segura_iesi_2025
+
 
   frontend_app:
-    build:
+    build: 
       context: ./frontend
-      dockerfile: dockerfile
+      dockerfile: dockerfile # Se o nome do arquivo for 'dockerfile' minúsculo mesmo
     container_name: iesi_frontend
     restart: always
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
+      # Removemos node_modules do volume para usar o instalado dentro do container
+      - /app/node_modules 
     depends_on:
-      - postgres_db
+      - backend_app # Geralmente o front depende do back estar de pé

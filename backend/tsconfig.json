@@ -41,5 +41,20 @@
     "moduleDetection": "force",
     "skipLibCheck": true,
     "esModuleInterop": true,
-  }
+    "exactOptionalPropertyTypes": false,
+    "strictNullChecks": false,
+    "noImplicitAny": false,
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "_prisma.config.ts", 
+    "prisma.config.ts"
+  ]
 }
