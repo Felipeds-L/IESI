@@ -1,4 +1,4 @@
-import { Pessoa, Paciente, Funcionario, Cargo } from '@prisma/client';
+import { Pessoa, Paciente, Funcionario, Cargo } from "@prisma/client";
 
 // Dados para criar uma Pessoa (e seus vínculos opcionais)
 export interface CreatePessoaDTO {
@@ -33,4 +33,6 @@ export interface IPessoaRepository {
   findByEmail(email: string): Promise<Pessoa | null>;
   create(data: CreatePessoaDTO): Promise<Pessoa>;
   findAll(): Promise<Pessoa[]>;
+  update(id: number, data: Partial<CreatePessoaDTO>): Promise<Pessoa>;
+  delete(id: number): Promise<void>;
 }
