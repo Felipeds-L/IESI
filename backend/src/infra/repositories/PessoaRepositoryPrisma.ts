@@ -1,9 +1,11 @@
-import { prisma } from '../database/prisma/client';
-import { IPessoaRepository, CreatePessoaDTO } from '../../domain/repositories/IPessoaRepository';
-import { Pessoa } from '@prisma/client';
+import { prisma } from "../database/prisma/client";
+import {
+  IPessoaRepository,
+  CreatePessoaDTO,
+} from "../../domain/repositories/IPessoaRepository";
+import { Pessoa } from "@prisma/client";
 
 export class PessoaRepositoryPrisma implements IPessoaRepository {
-  
   async findByCpf(cpf: string): Promise<Pessoa | null> {
     return await prisma.pessoa.findUnique({ where: { cpf } });
   }
@@ -27,42 +29,90 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
         telefone: data.telefone,
 
         // 2. Se tiver dados de PACIENTE, cria o registro na tabela Paciente
-        paciente: data.paciente ? {
-          create: {
-            convenioId: data.paciente.convenioId
-          }
-        } : undefined,
+        paciente: data.paciente
+          ? {
+              create: {
+                convenioId: data.paciente.convenioId,
+              },
+            }
+          : undefined,
 
         // 3. Se tiver dados de FUNCIONÁRIO, cria o registro na tabela Funcionario
-        funcionario: data.funcionario ? {
-          create: {
-            dataAdmissao: data.funcionario.dataAdmissao,
-            salario: data.funcionario.salario,
-            cargo: data.funcionario.cargo,
-            crm: data.funcionario.crm,
-            coren: data.funcionario.coren,
-            // Conecta as especialidades (se houver)
-            especialidades: data.funcionario.especialidadeIds ? {
-              connect: data.funcionario.especialidadeIds.map(id => ({ id }))
-            } : undefined
-          }
-        } : undefined
+        funcionario: data.funcionario
+          ? {
+              create: {
+                dataAdmissao: data.funcionario.dataAdmissao,
+                salario: data.funcionario.salario,
+                cargo: data.funcionario.cargo,
+                crm: data.funcionario.crm,
+                coren: data.funcionario.coren,
+                // Conecta as especialidades (se houver)
+                especialidades: data.funcionario.especialidadeIds
+                  ? {
+                      connect: data.funcionario.especialidadeIds.map((id) => ({
+                        id,
+                      })),
+                    }
+                  : undefined,
+              },
+            }
+          : undefined,
       },
       // Inclui os dados criados na resposta para conferência
       include: {
         paciente: true,
-        funcionario: true
-      }
-    
+        funcionario: true,
+      },
     });
-    
   }
   async findAll(): Promise<Pessoa[]> {
     return await prisma.pessoa.findMany({
       include: {
-        paciente: true,     // Traz os dados de paciente junto
-        funcionario: true,  // Traz os dados de funcionário junto
-      }
+        paciente: true, // Traz os dados de paciente junto
+        funcionario: true, // Traz os dados de funcionário junto
+      },
     });
-}
+  }
+
+  async update(id: number, data: Partial<CreatePessoaDTO>): Promise<Pessoa> {
+    return await prisma.pessoa.update({
+      where: { id },
+      data: {
+        ...data,
+        paciente: data.paciente
+          ? {
+              update: {
+                convenioId: data.paciente.convenioId,
+              },
+            }
+          : undefined,
+        funcionario: data.funcionario
+          ? {
+              update: {
+                dataAdmissao: data.funcionario.dataAdmissao,
+                salario: data.funcionario.salario,
+                cargo: data.funcionario.cargo,
+                crm: data.funcionario.crm,
+                coren: data.funcionario.coren,
+                especialidades: data.funcionario.especialidadeIds
+                  ? {
+                      connect: data.funcionario.especialidadeIds.map((id) => ({
+                        id,
+                      })),
+                    }
+                  : undefined,
+              },
+            }
+          : undefined,
+      },
+      include: {
+        paciente: true,
+        funcionario: true,
+      },
+    });
+  }
+
+  async delete(id: number): Promise<void> {
+    await prisma.pessoa.delete({ where: { id } });
+  }
 }

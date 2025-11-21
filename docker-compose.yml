@@ -13,7 +13,7 @@ services:
       - ./backend/pgdata:/var/lib/postgresql
 
   frontend_app:
-    build: 
+    build:
       context: ./frontend
       dockerfile: dockerfile
     container_name: iesi_frontend
@@ -23,4 +23,4 @@ services:
     volumes:
       - ./frontend:/app
     depends_on:
-      - postgress_db
+      - postgres_db
