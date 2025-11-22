@@ -1,0 +1,1 @@
+{"version":3,"file":"ListPessoasUseCase.d.ts","sourceRoot":"","sources":["../../../src/domain/usecases/ListPessoasUseCase.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,iBAAiB,EAAE,MAAM,mCAAmC,CAAC;AACtE,OAAO,EAAE,MAAM,EAAE,MAAM,gBAAgB,CAAC;AAExC,qBAAa,kBAAkB;IACjB,OAAO,CAAC,gBAAgB;gBAAhB,gBAAgB,EAAE,iBAAiB;IAEjD,OAAO,IAAI,OAAO,CAAC,MAAM,EAAE,CAAC;CAInC"}

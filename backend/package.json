@@ -7,7 +7,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/interfaces/http/server.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node dist/interfaces/http/server.js"
+    "start": "node dist/interfaces/http/server.js",
+    "create-user": "ts-node scripts/create-user.ts"
   },
   "repository": {
     "type": "git",
@@ -22,12 +23,18 @@
   "homepage": "https://github.com/Felipeds-L/IESI#readme",
   "dependencies": {
     "@prisma/client": "^6.19.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "bcryptjs": "^3.0.3",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.17",
     "@types/express": "^5.0.5",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.10.1",
