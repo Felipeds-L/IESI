@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 // ----------------------------------
 // Define o Cargo do Funcionário 
@@ -43,12 +42,6 @@ model Paciente {
   pessoa   Pessoa  @relation(fields: [pessoaId], references: [id])
   pessoaId Int     @unique // Garante que um paciente só está ligado a uma pessoa
 
-  convenio   Convenio? @relation(fields: [convenioId], references: [id])
-  convenioId Int?      
-  
-  // Um paciente pode ter vários responsáveis 
-  responsaveis ResponsaveisPaciente[]
-
   // Um paciente pode ter vários agendamentos 
   agendamentos Agendamento[]
 }
@@ -69,9 +62,6 @@ model Funcionario {
   crm            String?   // Apenas para MEDICO
   coren          String?   // Apenas para ENFERMEIRO
 
-  // Relação muitos-para-muitos com Especialidade 
-  especialidades Especialidade[] @relation("MedicoEspecialidades")
-
   // Um funcionário (médico) pode ter vários agendamentos
   agendamentos   Agendamento[]
   
@@ -81,39 +71,6 @@ model Funcionario {
   subordinados   Funcionario[] @relation("Hierarquia")
 }
 
-// Modelos auxiliares
-model Especialidade {
-  id    Int    @id @default(autoincrement())
-  nome  String @unique
-
-  // Médicos que possuem essa especialidade
-  medicos Funcionario[] @relation("MedicoEspecialidades")
-}
-
-model Convenio {
-  id    Int    @id @default(autoincrement())
-  nome  String @unique
-
-  pacientes Paciente[]
-}
-
-model ResponsaveisPaciente {
-  id         Int    @id @default(autoincrement())
-  nome       String
-  cpf        String?
-  parentesco String?
-
-  paciente   Paciente @relation(fields: [pacienteId], references: [id])
-  pacienteId Int
-}
-
-model Procedimento {
-  id    Int     @id @default(autoincrement())
-  nome  String  @unique
-  custo Float   
-
-  agendamentos Agendamento[]
-}
 
 model Agendamento {
   id          Int      @id @default(autoincrement())
@@ -126,7 +83,4 @@ model Agendamento {
 
   funcionario Funcionario @relation(fields: [funcionarioId], references: [id])
   funcionarioId Int       // O médico responsável 
-
-  procedimento Procedimento @relation(fields: [procedimentoId], references: [id])
-  procedimentoId Int      // O serviço (Consulta, Exame) 
 }
