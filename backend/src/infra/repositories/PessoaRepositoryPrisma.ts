@@ -27,16 +27,6 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
         sexo: data.sexo,
         endereco: data.endereco,
         telefone: data.telefone,
-
-        // 2. Se tiver dados de PACIENTE, cria o registro na tabela Paciente
-        paciente: data.paciente
-          ? {
-              create: {
-                convenioId: data.paciente.convenioId,
-              },
-            }
-          : undefined,
-
         // 3. Se tiver dados de FUNCIONÁRIO, cria o registro na tabela Funcionario
         funcionario: data.funcionario
           ? {
@@ -47,13 +37,6 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
                 crm: data.funcionario.crm,
                 coren: data.funcionario.coren,
                 // Conecta as especialidades (se houver)
-                especialidades: data.funcionario.especialidadeIds
-                  ? {
-                      connect: data.funcionario.especialidadeIds.map((id) => ({
-                        id,
-                      })),
-                    }
-                  : undefined,
               },
             }
           : undefined,
@@ -79,13 +62,6 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
       where: { id },
       data: {
         ...data,
-        paciente: data.paciente
-          ? {
-              update: {
-                convenioId: data.paciente.convenioId,
-              },
-            }
-          : undefined,
         funcionario: data.funcionario
           ? {
               update: {
@@ -94,13 +70,6 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
                 cargo: data.funcionario.cargo,
                 crm: data.funcionario.crm,
                 coren: data.funcionario.coren,
-                especialidades: data.funcionario.especialidadeIds
-                  ? {
-                      connect: data.funcionario.especialidadeIds.map((id) => ({
-                        id,
-                      })),
-                    }
-                  : undefined,
               },
             }
           : undefined,

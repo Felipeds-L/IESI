@@ -12,11 +12,6 @@ export interface CreatePessoaDTO {
   endereco?: string;
   telefone?: string;
 
-  // Dados Opcionais de Paciente
-  paciente?: {
-    convenioId?: number;
-  };
-
   // Dados Opcionais de Funcionario
   funcionario?: {
     dataAdmissao: Date;
@@ -24,7 +19,6 @@ export interface CreatePessoaDTO {
     cargo: Cargo;
     crm?: string;
     coren?: string;
-    especialidadeIds?: number[]; // Lista de IDs das especialidades
   };
 }
 
