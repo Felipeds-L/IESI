@@ -174,11 +174,11 @@ const Login = () => {
   return (
     <div className="min-h-screen grid md:grid-cols-2 font-sans">
       
-      <div className="hidden md:flex items-center justify-center bg-purple-900 p-12 relative overflow-hidden">
+      <div className="hidden md:flex items-center justify-center p-12 relative overflow-hidden">
         <img
           src={heroImage}
           alt="Imagem de Fundo"
-          className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
+          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-purple-900 via-purple-900/80 to-transparent"></div>
 
