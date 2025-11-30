@@ -35,7 +35,7 @@ export function AppointmentCard({
       </div>
       
       {/* Corpo: Informações */}
-      <div className="flex-grow space-y-3 text-sm text-gray-600 mb-6">
+      <div className="flex-grow space-y-3 text-base text-gray-600 mb-6">
         <p className="flex justify-between border-b border-gray-50 pb-2">
           <span className="font-medium text-gray-800">Paciente:</span> 
           <span>{patient}</span>
@@ -50,7 +50,7 @@ export function AppointmentCard({
         </p>
         <p className="flex justify-between pt-1">
           <span className="font-medium text-gray-800">Status:</span> 
-          <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-100 text-green-700">
+          <span className="px-2 py-0.5 rounded text-sm font-bold bg-green-100 text-green-700">
             {status}
           </span>
         </p>
@@ -59,7 +59,7 @@ export function AppointmentCard({
       {/* Botão */}
       <button 
         onClick={onViewDetails}
-        className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2.5 rounded-lg transition-colors text-sm border border-gray-100"
+        className="w-full bg-gray-50 hover:bg-gray-100 text-gray-700 font-medium py-2.5 rounded-lg transition-colors text-base border border-gray-100"
       >
         Ver Prontuário
       </button>
