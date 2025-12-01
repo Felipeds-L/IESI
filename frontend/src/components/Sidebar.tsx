@@ -40,7 +40,7 @@ export function Sidebar({ active }: SidebarProps) {
 
             {/* Menu Itens */}
             <nav className="flex-1 px-4 space-y-2 mt-4">
-                <p className="px-4 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                <p className="px-4 text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">
                     Menu Principal
                 </p>
                 
@@ -78,14 +78,14 @@ export function Sidebar({ active }: SidebarProps) {
                         <User size={20} />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-gray-800">Dr. Usuário</p>
-                        <p className="text-xs text-purple-600 font-medium uppercase">{userRole || 'Médico'}</p>
+                        <p className="text-base font-bold text-gray-800">Dr. Usuário</p>
+                        <p className="text-sm text-purple-600 font-medium uppercase">{userRole || 'Médico'}</p>
                     </div>
                 </div>
 
                 <button 
                     onClick={handleLogout}
-                    className="w-full flex items-center gap-2 text-gray-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors text-sm font-medium"
+                    className="w-full flex items-center gap-2 text-gray-500 hover:text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors text-base font-medium"
                 >
                     <LogOut size={18} />
                     Sair do Sistema

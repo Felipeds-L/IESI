@@ -6,6 +6,15 @@ import { z } from "zod";
 
 import heroImage from "../../assets/hospital-hero.jpg";
 
+// --- DADOS DE TESTE (MOCK) ---
+
+const TEST_ACCOUNTS = [
+  { role: "admin", cpf: "000.000.000-00", pass: "admin123", route: "/dashboard", label: "Administrador" },
+  { role: "medico", cpf: "111.111.111-11", pass: "med123", route: "/dashboard", label: "Médico(a)" },
+  { role: "enfermeiro", cpf: "222.222.222-22", pass: "enf123", route: "/dashboard", label: "Enfermeiro(a)" },
+  { role: "recepcao", cpf: "333.333.333-33", pass: "rec123", route: "/dashboard", label: "Recepção" },
+];
+
 const loginSchema = z.object({
   cpf: z.string().min(11, "CPF deve ter 11 dígitos"),
   password: z.string().min(1, "Senha obrigatória"),
@@ -15,7 +24,7 @@ const signUpSchema = z.object({
   fullName: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
   cpf: z.string().min(11, "CPF deve ter 11 dígitos"),
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  role: z.enum(["membro", "enfermeiro", "recepcao", "admin"]),
+  role: z.enum(["medico", "enfermeiro", "recepcao", "admin"]),
 });
 
 const Login = () => {
@@ -28,7 +37,7 @@ const Login = () => {
     fullName: "",
     cpf: "",
     password: "",
-    role: "membro",
+    role: "medico",
   });
 
   // --- FUNÇÕES DE API ---
@@ -38,57 +47,38 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const validated = loginSchema.parse(loginData);
-      const cleanCpf = validated.cpf.replace(/\D/g, "");
-
-      // Simulação para testar sem backend rodando
-      try {
-          await new Promise(resolve => setTimeout(resolve, 1500)); 
-          
-          // --- AQUI ESTÁ O CONTROLE DE ACESSO (SIMULAÇÃO) ---
-          // Mudei de "medico" para "admin" para você ter acesso total
-          const simulatedRole = "admin"; 
-          
-          localStorage.setItem("userRole", simulatedRole);
-          localStorage.setItem("userName", "Usuário Teste");
-
-          toast.success(`Bem-vindo! Acesso: ${simulatedRole.toUpperCase()}`);
-          
-          // Se for admin, já manda direto pra tela de admin (opcional)
-          if (simulatedRole === 'admin') {
-             navigate("/admin");
-          } else {
-             navigate("/dashboard");
-          }
-          return; 
-      } catch (err) {
-          // Ignora erro de conexão
-      }
-
-      // Código Real (quando tiver backend)
-      const response = await fetch("http://localhost:3000/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cpf: cleanCpf,
-          password: validated.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Falha na autenticação");
-
-      // Salva o role vindo do backend real
-      localStorage.setItem("userRole", data.role || "membro");
-
-      toast.success("Login realizado com sucesso!");
+      // Usando safeParse para validação segura
+      const result = loginSchema.safeParse(loginData);
       
-      if (data.role === 'admin') {
-         navigate("/admin");
-      } else {
-         navigate("/dashboard");
+      if (!result.success) {
+        handleError(result.error);
+        setLoading(false);
+        return;
       }
+
+      const validated = result.data;
+      
+      // Simulação de delay de rede
+      await new Promise(resolve => setTimeout(resolve, 1500)); 
+
+      // --- LÓGICA DE MÚLTIPLOS ACESSOS (MOCK) ---
+      const mockUser = TEST_ACCOUNTS.find(
+        u => u.cpf === validated.cpf && u.pass === validated.password
+      );
+
+      if (mockUser) {
+          // Aqui salvamos o "Crachá" do usuário
+          localStorage.setItem("userRole", mockUser.role);
+          localStorage.setItem("userName", "Usuário de Teste");
+
+          toast.success(`Bem-vindo! Acesso: ${mockUser.label}`);
+          
+          // Redireciona para a rota definida (agora todos vão para /dashboard)
+          navigate(mockUser.route);
+          return;
+      }
+
+      throw new Error("Credenciais inválidas. Verifique CPF ou senha.");
 
     } catch (error) {
       handleError(error);
@@ -102,37 +92,20 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const validated = signUpSchema.parse(signupData);
-      const cleanCpf = validated.cpf.replace(/\D/g, "");
+      const result = signUpSchema.safeParse(signupData);
 
-      try {
-         await new Promise(resolve => setTimeout(resolve, 1500));
-         toast.success("Conta criada! Faça login para continuar.");
-         setActiveTab("login");
-         setLoginData({ cpf: signupData.cpf, password: "" });
-         setLoading(false);
-         return;
-      } catch (err) {}
-
-      const response = await fetch("http://localhost:3000/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: validated.fullName,
-          cpf: cleanCpf,
-          password: validated.password,
-          role: validated.role,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.error || "Falha ao criar conta");
-
+      if (!result.success) {
+        handleError(result.error);
+        setLoading(false);
+        return;
+      }
+      
+      // Simulação de cadastro
+      await new Promise(resolve => setTimeout(resolve, 1500));
       toast.success("Conta criada! Faça login para continuar.");
       setActiveTab("login");
       setLoginData({ cpf: signupData.cpf, password: "" });
-
+      
     } catch (error) {
       handleError(error);
     } finally {
@@ -165,15 +138,16 @@ const Login = () => {
     }
 
     if (form === "login") {
-      setLoginData({ ...loginData, [field]: value });
+      setLoginData({ ...loginData, [field as keyof typeof loginData]: value });
     } else {
-      setSignupData({ ...signupData, [field]: value });
+      setSignupData({ ...signupData, [field as keyof typeof signupData]: value });
     }
   };
 
   return (
     <div className="min-h-screen grid md:grid-cols-2 font-sans">
       
+      {/* Lado Esquerdo - Hero */}
       <div className="hidden md:flex items-center justify-center p-12 relative overflow-hidden">
         <img
           src={heroImage}
@@ -195,9 +169,11 @@ const Login = () => {
         </div>
       </div>
 
+      {/* Lado Direito - Formulários */}
       <div className="flex items-center justify-center p-4 bg-gray-50">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
 
+          {/* Abas */}
           <div className="flex p-1 bg-purple-50 rounded-xl mb-8">
             <button
               onClick={() => setActiveTab("login")}
@@ -232,6 +208,7 @@ const Login = () => {
             </p>
           </div>
 
+          {/* FORMULÁRIO LOGIN */}
           {activeTab === "login" && (
             <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
@@ -273,6 +250,7 @@ const Login = () => {
             </form>
           )}
 
+          {/* FORMULÁRIO CADASTRO */}
           {activeTab === "signup" && (
             <form onSubmit={handleSignup} className="space-y-4">
               <div className="space-y-2">
@@ -325,7 +303,7 @@ const Login = () => {
                   value={signupData.role}
                   onChange={(e) => handleInputChange(e, "signup", "role")}
                 >
-                  <option value="membro">Médico(a)</option>
+                  <option value="medico">Médico(a)</option>
                   <option value="enfermeiro">Enfermeiro(a)</option>
                   <option value="recepcao">Recepção</option>
                   <option value="admin">Administrador</option>
@@ -335,7 +313,7 @@ const Login = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 flex items-center justify-center rounded-lg bg-purple-600 text-white text-base font-bold hover:bg-purple-700 active:scale-[0.98] transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed mt-2"
+                className="w-full h-12 flex items-center justify-center rounded-lg bg-purple-600 text-white text-base font-bold hover:bg-purple-700 active:scale-[0.98] transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
               </button>
