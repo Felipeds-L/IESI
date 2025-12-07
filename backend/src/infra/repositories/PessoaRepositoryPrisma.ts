@@ -40,6 +40,11 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
               },
             }
           : undefined,
+        paciente: data.paciente
+          ? {
+              create: {},
+            }
+          : undefined,
       },
       // Inclui os dados criados na resposta para conferência
       include: {
@@ -73,6 +78,7 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
               },
             }
           : undefined,
+        paciente: data.paciente ? { update: {} } : undefined,
       },
       include: {
         paciente: true,

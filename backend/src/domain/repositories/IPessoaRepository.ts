@@ -20,6 +20,8 @@ export interface CreatePessoaDTO {
     crm?: string;
     coren?: string;
   };
+
+  paciente?: {};
 }
 
 export interface IPessoaRepository {
