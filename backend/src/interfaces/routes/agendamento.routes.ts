@@ -18,13 +18,19 @@ const createAgendamentoUseCase = new CreateAgendamentoUseCase(
 
 // 3. Cria o Controller injetando OS DOIS Use Cases
 const agendamentoController = new AgendamentoController(
-  createAgendamentoUseCase
+  createAgendamentoUseCase,
+  agendamentoRepository
 );
 
 // 4. Define as rotas
 agendamentoRoutes.post(
   "/",
   agendamentoController.create.bind(agendamentoController)
+);
+
+agendamentoRoutes.get(
+  "/",
+  agendamentoController.getAll.bind(agendamentoController)
 );
 
 export { agendamentoRoutes };
