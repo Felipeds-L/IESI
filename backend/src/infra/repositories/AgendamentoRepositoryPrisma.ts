@@ -16,11 +16,13 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
         tipoConsulta: data.tipoConsulta,
         especialidade: data.especialidade,
         descricao: data.descricao,
-        pacienteId: data.pacienteId,
+        sexo: data.sexo,
+        idade: data.idade,
+        responsavelNome: data.responsavelNome,
+        nomePaciente: data.nomePaciente,
         funcionarioId: data.funcionarioId,
       },
       include: {
-        paciente: true,
         funcionario: true,
       },
     });
@@ -29,7 +31,6 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
   async findAll(): Promise<Agendamento[]> {
     return await prisma.agendamento.findMany({
       include: {
-        paciente: true,
         funcionario: true,
       },
     });
@@ -39,7 +40,6 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
     return await prisma.agendamento.findUnique({
       where: { id },
       include: {
-        paciente: true,
         funcionario: true,
       },
     });

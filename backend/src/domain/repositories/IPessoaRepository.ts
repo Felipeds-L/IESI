@@ -12,12 +12,6 @@ export interface CreatePessoaDTO {
     password: string;
     crm?: string;
   };
-
-  paciente?: {
-    sexo?: string;
-    idade?: number;
-    responsavelNome?: string;
-  };
 }
 
 type PessoaComFuncionario = Pessoa & {

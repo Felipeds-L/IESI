@@ -43,19 +43,9 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
               },
             }
           : undefined,
-        paciente: data.paciente
-          ? {
-              create: {
-                sexo: data.paciente.sexo,
-                idade: data.paciente.idade,
-                responsavelNome: data.paciente.responsavelNome
-              },
-            }
-          : undefined,
       },
       // Inclui os dados criados na resposta para conferência
       include: {
-        paciente: true,
         funcionario: true,
       },
     });
@@ -63,7 +53,6 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
   async findAll(): Promise<Pessoa[]> {
     return await prisma.pessoa.findMany({
       include: {
-        paciente: true, // Traz os dados de paciente junto
         funcionario: true, // Traz os dados de funcionário junto
       },
     });
@@ -83,16 +72,8 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
               },
             }
           : undefined,
-        paciente: data.paciente
-         ? { 
-            update: {
-                sexo: data.paciente.sexo,
-                idade: data.paciente.idade,
-                responsavelNome: data.paciente.responsavelNome
-        } } : undefined,
       },
       include: {
-        paciente: true,
         funcionario: true,
       },
     });

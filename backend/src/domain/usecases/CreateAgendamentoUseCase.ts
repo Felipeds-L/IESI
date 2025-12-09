@@ -8,14 +8,6 @@ export class CreateAgendamentoUseCase {
   constructor(private agendamentoRepository: IAgendamentoRepository) {}
 
   async execute(data: CreateAgendamentoDTO) {
-    // Verifica se paciente existe
-    const paciente = await prisma.paciente.findUnique({
-      where: { id: data.pacienteId },
-    });
-
-    if (!paciente) {
-      throw new Error("Paciente não encontrado.");
-    }
 
     // Verifica se funcionário existe
     const funcionario = await prisma.funcionario.findUnique({

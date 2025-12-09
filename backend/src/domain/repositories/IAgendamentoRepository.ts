@@ -6,7 +6,10 @@ export interface CreateAgendamentoDTO {
   tipoConsulta: string;
   especialidade?: string;
   descricao?: string;
-  pacienteId: number; // obrigatório
+  nomePaciente: string;
+  sexo?: string;
+  idade?: number;
+  responsavelNome?: string;
   funcionarioId: number; // obrigatório
 }
 

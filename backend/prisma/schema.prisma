@@ -21,26 +21,8 @@ model Pessoa {
   nome      String  
   createdAt DateTime @default(now())
 
-  // --- Relações de Especialização ---
-  // Uma Pessoa pode ter (ou não) um perfil de Paciente
-  paciente     Paciente?
   // Uma Pessoa pode ter (ou não) um perfil de Funcionário
   funcionario  Funcionario?
-}
-
-// Modelo Paciente (Especialização de Pessoa) 
-model Paciente {
-  id       Int     @id @default(autoincrement())
-  
-  // Relação 1-para-1 com Pessoa
-  pessoa   Pessoa  @relation(fields: [pessoaId], references: [id])
-  pessoaId Int     @unique // Garante que um paciente só está ligado a uma pessoa
-
-  sexo      String?  // 
-  idade    Int?     //
-  responsavelNome String? // Nome do responsável (se menor de idade)
-  // Um paciente pode ter vários agendamentos 
-  agendamentos Agendamento[]
 }
 
 // Modelo Funcionário (Especialização de Pessoa) 
@@ -67,8 +49,10 @@ model Agendamento {
   tipoConsulta String   // (ex: CONSULTA, RETORNO, EXAME)
   especialidade String?  // Ex: Cardiologista, Pediatra, etc.    
   descricao   String?  // Detalhes adicionais    
-  paciente    Paciente    @relation(fields: [pacienteId], references: [id])
-  pacienteId  Int         
+  sexo      String?  // 
+  idade    Int?     //
+  responsavelNome String? 
+  nomePaciente String?        
 
   funcionario Funcionario @relation(fields: [funcionarioId], references: [id])
   funcionarioId Int       // O médico responsável 
