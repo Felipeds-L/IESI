@@ -4,8 +4,11 @@ import { IPessoaRepository } from '../repositories/IPessoaRepository';
 
 // O que precisamos receber para logar
 interface IRequest {
-  email: string;
-  password: string;
+  funcionario:{
+    cpf: string;
+    password: string;
+  }
+  
 }
 
 // O que vamos devolver (o Token e os dados do usuário)
@@ -13,8 +16,9 @@ interface IResponse {
   pessoa: {
     id: number;
     nome: string;
-    email: string;
-    cargo?: string | null; // Opcional, ajuda o front a saber quem é
+    funcionario?: {
+      cpf: string;
+    }
   };
   token: string;
 }
@@ -22,17 +26,17 @@ interface IResponse {
 export class AuthenticatePessoaUseCase {
   constructor(private pessoaRepository: IPessoaRepository) {}
 
-  async execute({ email, password }: IRequest): Promise<IResponse> {
+  async execute({ funcionario }: IRequest): Promise<IResponse> {
     // 1. Verificar se o email existe
-    const pessoa = await this.pessoaRepository.findByEmail(email);
-    if (!pessoa) {
-      throw new Error('Email ou senha incorretos.');
+    const pessoa = await this.pessoaRepository.findByCpf(funcionario.cpf);
+    if (!pessoa || !pessoa.funcionario) {
+      throw new Error('Cpf ou senha incorretos.');
     }
 
     // 2. Verificar se a senha bate (compara a senha enviada com o hash do banco)
-    const passwordMatch = await compare(password, pessoa.password);
+    const passwordMatch = await compare(funcionario.password, pessoa.funcionario.password);
     if (!passwordMatch) {
-      throw new Error('Email ou senha incorretos.');
+      throw new Error('Cpf ou senha incorretos.');
     }
 
     if (!process.env.JWT_SECRET) {
@@ -52,8 +56,9 @@ export class AuthenticatePessoaUseCase {
       pessoa: {
         id: pessoa.id,
         nome: pessoa.nome,
-        email: pessoa.email,
-        cargo,
+        funcionario:{
+          cpf: (pessoa as any).funcionario?.cpf
+        }
       },
       token,
     };

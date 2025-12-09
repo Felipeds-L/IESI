@@ -18,14 +18,7 @@ enum Cargo {
 // Modelo Central - O "Cadastro Único"
 model Pessoa {
   id        Int      @id @default(autoincrement())
-  cpf       String   @unique // Identificador principal 
   nome      String  
-  email     String   @unique
-  password  String   // Precisamos disso para o login 
-  dataNascimento DateTime // 
-  sexo      String?  // 
-  endereco  String?  // 
-  telefone  String?  // 
   createdAt DateTime @default(now())
 
   // --- Relações de Especialização ---
@@ -43,6 +36,9 @@ model Paciente {
   pessoa   Pessoa  @relation(fields: [pessoaId], references: [id])
   pessoaId Int     @unique // Garante que um paciente só está ligado a uma pessoa
 
+  sexo      String?  // 
+  idade    Int?     //
+  responsavelNome String? // Nome do responsável (se menor de idade)
   // Um paciente pode ter vários agendamentos 
   agendamentos Agendamento[]
 }
@@ -55,30 +51,22 @@ model Funcionario {
   pessoa         Pessoa    @relation(fields: [pessoaId], references: [id])
   pessoaId       Int       @unique
   
-  dataAdmissao   DateTime  
-  salario        Float?    
-  cargo          Cargo     
-
-  // Campos específicos (baseado no cargo) 
+  cpf       String   @unique // Identificador principal 
+  password  String   // Precisamos disso para o login 
   crm            String?   // Apenas para MEDICO
-  coren          String?   // Apenas para ENFERMEIRO
 
   // Um funcionário (médico) pode ter vários agendamentos
   agendamentos   Agendamento[]
-  
-  // Auto-relação para hierarquia 
-  supervisor     Funcionario? @relation("Hierarquia", fields: [supervisorId], references: [id])
-  supervisorId   Int?
-  subordinados   Funcionario[] @relation("Hierarquia")
 }
 
 
 model Agendamento {
   id          Int      @id @default(autoincrement())
   dataHora    DateTime
-  status      String   // (ex: AGENDADO, REALIZADO, CANCELADO) 
-  custo       Float    
-  pagador     String   // (ex: PACIENTE, CONVENIO) 
+  status      String   // (ex: AGENDADO, REALIZADO, CANCELADO)
+  tipoConsulta String   // (ex: CONSULTA, RETORNO, EXAME)
+  especialidade String?  // Ex: Cardiologista, Pediatra, etc.    
+  descricao   String?  // Detalhes adicionais    
   paciente    Paciente    @relation(fields: [pacienteId], references: [id])
   pacienteId  Int         
 

@@ -5,13 +5,25 @@ import {
 } from "../../domain/repositories/IPessoaRepository";
 import { Pessoa } from "@prisma/client";
 
-export class PessoaRepositoryPrisma implements IPessoaRepository {
-  async findByCpf(cpf: string): Promise<Pessoa | null> {
-    return await prisma.pessoa.findUnique({ where: { cpf } });
-  }
+type PessoaComFuncionario = Pessoa & {
+  funcionario: {
+    cpf: string;
+    password: string;
+  } | null;
+};
 
-  async findByEmail(email: string): Promise<Pessoa | null> {
-    return await prisma.pessoa.findUnique({ where: { email } });
+export class PessoaRepositoryPrisma implements IPessoaRepository {
+  async findByCpf(cpf: string): Promise<PessoaComFuncionario | null> {
+    return (await prisma.pessoa.findFirst({
+      where: {
+        funcionario: {  
+          cpf: cpf,
+        },
+      }, 
+      include: {
+        funcionario: true,
+      },
+    })) as PessoaComFuncionario | null;
   }
 
   async create(data: CreatePessoaDTO): Promise<Pessoa> {
@@ -19,30 +31,25 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
     return await prisma.pessoa.create({
       data: {
         // 1. Dados Básicos
-        cpf: data.cpf,
         nome: data.nome,
-        email: data.email,
-        password: data.password,
-        dataNascimento: data.dataNascimento,
-        sexo: data.sexo,
-        endereco: data.endereco,
-        telefone: data.telefone,
         // 3. Se tiver dados de FUNCIONÁRIO, cria o registro na tabela Funcionario
         funcionario: data.funcionario
           ? {
               create: {
-                dataAdmissao: data.funcionario.dataAdmissao,
-                salario: data.funcionario.salario,
-                cargo: data.funcionario.cargo,
                 crm: data.funcionario.crm,
-                coren: data.funcionario.coren,
+                cpf: data.funcionario.cpf,
+                password: data.funcionario.password
                 // Conecta as especialidades (se houver)
               },
             }
           : undefined,
         paciente: data.paciente
           ? {
-              create: {},
+              create: {
+                sexo: data.paciente.sexo,
+                idade: data.paciente.idade,
+                responsavelNome: data.paciente.responsavelNome
+              },
             }
           : undefined,
       },
@@ -70,15 +77,19 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
         funcionario: data.funcionario
           ? {
               update: {
-                dataAdmissao: data.funcionario.dataAdmissao,
-                salario: data.funcionario.salario,
-                cargo: data.funcionario.cargo,
                 crm: data.funcionario.crm,
-                coren: data.funcionario.coren,
+                cpf: data.funcionario.cpf,
+                password: data.funcionario.password
               },
             }
           : undefined,
-        paciente: data.paciente ? { update: {} } : undefined,
+        paciente: data.paciente
+         ? { 
+            update: {
+                sexo: data.paciente.sexo,
+                idade: data.paciente.idade,
+                responsavelNome: data.paciente.responsavelNome
+        } } : undefined,
       },
       include: {
         paciente: true,

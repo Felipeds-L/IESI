@@ -5,12 +5,14 @@ export class AuthenticatePessoaController {
   constructor(private authenticatePessoaUseCase: AuthenticatePessoaUseCase) {}
 
   async handle(req: Request, res: Response) {
-    const { email, password } = req.body;
+    const { cpf, password } = req.body;
 
     try {
       const result = await this.authenticatePessoaUseCase.execute({
-        email,
-        password,
+        funcionario: {
+            cpf,
+            password,
+        }
       });
 
       return res.json(result);

@@ -3,9 +3,9 @@ import { Agendamento } from "@prisma/client";
 export interface CreateAgendamentoDTO {
   dataHora: Date;
   status: string;
-  custo: number;
-  pagador: string;
-
+  tipoConsulta: string;
+  especialidade?: string;
+  descricao?: string;
   pacienteId: number; // obrigatório
   funcionarioId: number; // obrigatório
 }

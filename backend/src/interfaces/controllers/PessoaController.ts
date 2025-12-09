@@ -15,12 +15,6 @@ export class PessoaController {
   async create(req: Request, res: Response) {
     const data = req.body;
 
-    // Conversão de datas
-    if (data.dataNascimento)
-      data.dataNascimento = new Date(data.dataNascimento);
-    if (data.funcionario?.dataAdmissao)
-      data.funcionario.dataAdmissao = new Date(data.funcionario.dataAdmissao);
-
     try {
       const pessoa = await this.createPessoaUseCase.execute(data);
       return res.status(201).json(pessoa);
@@ -33,11 +27,6 @@ export class PessoaController {
     const id = Number(req.params.id);
     const data = req.body;
 
-    // Conversão de datas
-    if (data.dataNascimento)
-      data.dataNascimento = new Date(data.dataNascimento);
-    if (data.funcionario?.dataAdmissao)
-      data.funcionario.dataAdmissao = new Date(data.funcionario.dataAdmissao);
 
     try {
       const pessoa = await this.updatePessoaUseCase.execute(id, data);

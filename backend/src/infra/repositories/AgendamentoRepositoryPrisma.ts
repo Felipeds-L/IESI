@@ -13,8 +13,9 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
       data: {
         dataHora: data.dataHora,
         status: data.status,
-        custo: data.custo,
-        pagador: data.pagador,
+        tipoConsulta: data.tipoConsulta,
+        especialidade: data.especialidade,
+        descricao: data.descricao,
         pacienteId: data.pacienteId,
         funcionarioId: data.funcionarioId,
       },
