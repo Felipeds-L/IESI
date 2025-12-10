@@ -4,27 +4,50 @@ import {
     LogOut, 
     User, 
     Shield,
-    Stethoscope
+    Stethoscope,
+    Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface SidebarProps {
-    active: 'agenda' | 'admin';
+    active: 'agenda' | 'admin' | 'pacientes';
 }
 
 export function Sidebar({ active }: SidebarProps) {
     const navigate = useNavigate();
     const [userRole, setUserRole] = useState<string>('');
+    const [userName, setUserName] = useState<string>('');
 
     useEffect(() => {
-        const role = localStorage.getItem('userRole') || 'membro';
-        setUserRole(role);
+        const updateUserData = () => {
+            const role = localStorage.getItem('userRole') || 'membro';
+            const name = localStorage.getItem('userName') || 'Usuário';
+            setUserRole(role);
+            setUserName(name);
+        };
+        
+        updateUserData();
+        
+        // Atualiza quando o storage muda
+        window.addEventListener('storage', updateUserData);
+        
+        // Verifica mudanças periodicamente (para mudanças na mesma aba)
+        const interval = setInterval(updateUserData, 1000);
+        
+        return () => {
+            window.removeEventListener('storage', updateUserData);
+            clearInterval(interval);
+        };
     }, []);
 
-    const isAdmin = userRole === 'admin';
+    const isAdmin = userRole === 'admin' || userRole === 'administrativo';
 
     const handleLogout = () => {
         localStorage.removeItem('userRole');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userId');
+        localStorage.removeItem('token');
+        localStorage.removeItem('funcionarioId');
         navigate('/login');
     };
 
@@ -56,6 +79,18 @@ export function Sidebar({ active }: SidebarProps) {
                     Agenda
                 </button>
                 
+                <button 
+                    onClick={() => navigate('/pacientes')}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${
+                        active === 'pacientes' 
+                        ? 'bg-purple-50 text-purple-700' 
+                        : 'text-gray-600 hover:bg-gray-50'
+                    }`}
+                >
+                    <Users size={20} />
+                    Pacientes
+                </button>
+                
                 {isAdmin && (
                     <button 
                         onClick={() => navigate('/admin')}
@@ -78,8 +113,14 @@ export function Sidebar({ active }: SidebarProps) {
                         <User size={20} />
                     </div>
                     <div>
-                        <p className="text-base font-bold text-gray-800">Dr. Usuário</p>
-                        <p className="text-sm text-purple-600 font-medium uppercase">{userRole || 'Médico'}</p>
+                        <p className="text-base font-bold text-gray-800">{userName}</p>
+                        <p className="text-sm text-purple-600 font-medium uppercase">
+                            {userRole === 'administrativo' || userRole === 'admin' 
+                                ? 'Administrador' 
+                                : userRole === 'medico' 
+                                ? 'Médico' 
+                                : userRole || 'Usuário'}
+                        </p>
                     </div>
                 </div>
 

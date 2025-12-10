@@ -9,6 +9,7 @@ type PessoaComFuncionario = Pessoa & {
   funcionario: {
     cpf: string;
     password: string;
+    cargo?: string;
   } | null;
 };
 
@@ -38,8 +39,8 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
               create: {
                 crm: data.funcionario.crm,
                 cpf: data.funcionario.cpf,
-                password: data.funcionario.password
-                // Conecta as especialidades (se houver)
+                password: data.funcionario.password,
+                cargo: data.funcionario.cargo ? (data.funcionario.cargo as any) : 'MEDICO'
               },
             }
           : undefined,
@@ -68,7 +69,8 @@ export class PessoaRepositoryPrisma implements IPessoaRepository {
               update: {
                 crm: data.funcionario.crm,
                 cpf: data.funcionario.cpf,
-                password: data.funcionario.password
+                password: data.funcionario.password,
+                cargo: data.funcionario.cargo ? (data.funcionario.cargo as any) : undefined
               },
             }
           : undefined,

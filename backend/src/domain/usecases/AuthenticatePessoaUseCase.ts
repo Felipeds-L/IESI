@@ -18,6 +18,7 @@ interface IResponse {
     nome: string;
     funcionario?: {
       cpf: string;
+      cargo?: string;
     }
   };
   token: string;
@@ -27,10 +28,38 @@ export class AuthenticatePessoaUseCase {
   constructor(private pessoaRepository: IPessoaRepository) {}
 
   async execute({ funcionario }: IRequest): Promise<IResponse> {
-    // 1. Verificar se o email existe
-    const pessoa = await this.pessoaRepository.findByCpf(funcionario.cpf);
+    // Verifica se é login admin
+    if (funcionario.cpf.toLowerCase() === 'admin' && funcionario.password === 'admin123') {
+      // Login admin hardcoded
+      if (!process.env.JWT_SECRET) {
+        throw new Error('Erro interno: JWT_SECRET não está definido no .env');
+      }
+
+      const token = sign({}, process.env.JWT_SECRET, {
+        subject: '0', // ID especial para admin
+        expiresIn: '1d',
+      });
+
+      return {
+        pessoa: {
+          id: 0,
+          nome: 'Administrador',
+          funcionario: {
+            cpf: 'admin',
+            cargo: 'ADMINISTRATIVO'
+          }
+        },
+        token,
+      };
+    }
+
+    // 1. Normaliza CPF (remove formatação)
+    const cpfLimpo = funcionario.cpf.replace(/[^\d]+/g, "");
+    
+    // 2. Verificar se o CPF existe
+    const pessoa = await this.pessoaRepository.findByCpf(cpfLimpo);
     if (!pessoa || !pessoa.funcionario) {
-      throw new Error('Cpf ou senha incorretos.');
+      throw new Error('CPF ou senha incorretos.');
     }
 
     // 2. Verificar se a senha bate (compara a senha enviada com o hash do banco)
@@ -57,7 +86,8 @@ export class AuthenticatePessoaUseCase {
         id: pessoa.id,
         nome: pessoa.nome,
         funcionario:{
-          cpf: (pessoa as any).funcionario?.cpf
+          cpf: (pessoa as any).funcionario?.cpf,
+          cargo: cargo
         }
       },
       token,

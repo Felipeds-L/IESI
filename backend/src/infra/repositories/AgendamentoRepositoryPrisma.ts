@@ -21,17 +21,29 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
         responsavelNome: data.responsavelNome,
         nomePaciente: data.nomePaciente,
         funcionarioId: data.funcionarioId,
+        pacienteId: data.pacienteId,
       },
       include: {
         funcionario: true,
+        paciente: {
+          include: {
+            pessoa: true,
+          },
+        },
       },
     });
   }
 
-  async findAll(): Promise<Agendamento[]> {
+  async findAll(funcionarioId?: number): Promise<Agendamento[]> {
     return await prisma.agendamento.findMany({
+      where: funcionarioId ? { funcionarioId } : undefined,
       include: {
         funcionario: true,
+        paciente: {
+          include: {
+            pessoa: true,
+          },
+        },
       },
     });
   }
@@ -41,6 +53,11 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
       where: { id },
       include: {
         funcionario: true,
+        paciente: {
+          include: {
+            pessoa: true,
+          },
+        },
       },
     });
   }

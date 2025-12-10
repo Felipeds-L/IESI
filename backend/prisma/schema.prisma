@@ -23,6 +23,8 @@ model Pessoa {
 
   // Uma Pessoa pode ter (ou não) um perfil de Funcionário
   funcionario  Funcionario?
+  // Uma Pessoa pode ter (ou não) um perfil de Paciente
+  paciente     Paciente?
 }
 
 // Modelo Funcionário (Especialização de Pessoa) 
@@ -35,12 +37,31 @@ model Funcionario {
   
   cpf       String   @unique // Identificador principal 
   password  String   // Precisamos disso para o login 
+  cargo     Cargo   @default(MEDICO) // Cargo do funcionário
   crm            String?   // Apenas para MEDICO
+  especialidade  String?   // Especialidade médica (ex: Cardiologista, Pediatra, etc.)
 
   // Um funcionário (médico) pode ter vários agendamentos
   agendamentos   Agendamento[]
 }
 
+
+// Modelo Paciente (Especialização de Pessoa)
+model Paciente {
+  id             Int       @id @default(autoincrement())
+  
+  // Relação 1-para-1 com Pessoa
+  pessoa         Pessoa    @relation(fields: [pessoaId], references: [id])
+  pessoaId       Int       @unique
+  
+  cpf            String    @unique // CPF do paciente
+  dataNascimento DateTime? // Data de nascimento
+  sexo           String?   // M, F, Outro
+  responsavelNome String?  // Nome do responsável (para menores)
+  
+  // Um paciente pode ter vários agendamentos
+  agendamentos   Agendamento[]
+}
 
 model Agendamento {
   id          Int      @id @default(autoincrement())
@@ -52,8 +73,12 @@ model Agendamento {
   sexo      String?  // 
   idade    Int?     //
   responsavelNome String? 
-  nomePaciente String?        
-
+  nomePaciente String?        // Mantido para compatibilidade
+  
   funcionario Funcionario @relation(fields: [funcionarioId], references: [id])
-  funcionarioId Int       // O médico responsável 
+  funcionarioId Int       // O médico responsável
+  
+  // Relação com Paciente (opcional, para manter compatibilidade)
+  paciente   Paciente?   @relation(fields: [pacienteId], references: [id])
+  pacienteId Int?        // ID do paciente cadastrado
 }
