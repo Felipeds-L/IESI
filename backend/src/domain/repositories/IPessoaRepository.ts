@@ -10,7 +10,8 @@ export interface CreatePessoaDTO {
   funcionario?: {
     cpf: string;
     password: string;
-    crm?: string;
+    cargo?: string; // MEDICO, ENFERMEIRO, ADMINISTRATIVO
+    crm?: string; // Apenas para médicos
   };
 }
 
@@ -18,6 +19,7 @@ type PessoaComFuncionario = Pessoa & {
   funcionario: {
     cpf: string;
     password: string;
+    cargo?: string;
   } | null;
 };
 

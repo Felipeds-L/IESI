@@ -6,39 +6,21 @@ import { z } from "zod";
 
 import heroImage from "../../assets/hospital-hero.jpg";
 
-// --- DADOS DE TESTE (MOCK) ---
-
-const TEST_ACCOUNTS = [
-  { role: "admin", cpf: "000.000.000-00", pass: "admin123", route: "/dashboard", label: "Administrador" },
-  { role: "medico", cpf: "111.111.111-11", pass: "med123", route: "/dashboard", label: "Médico(a)" },
-  { role: "enfermeiro", cpf: "222.222.222-22", pass: "enf123", route: "/dashboard", label: "Enfermeiro(a)" },
-  { role: "recepcao", cpf: "333.333.333-33", pass: "rec123", route: "/dashboard", label: "Recepção" },
-];
+// URL da API
+const API_URL = "http://localhost:3000";
 
 const loginSchema = z.object({
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos"),
+  cpf: z.string().min(1, "CPF ou login é obrigatório"),
   password: z.string().min(1, "Senha obrigatória"),
 });
 
-const signUpSchema = z.object({
-  fullName: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
-  cpf: z.string().min(11, "CPF deve ter 11 dígitos"),
-  password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
-  role: z.enum(["medico", "enfermeiro", "recepcao", "admin"]),
-});
 
 const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [activeTab] = useState<"login" | "signup">("login");
 
   const [loginData, setLoginData] = useState({ cpf: "", password: "" });
-  const [signupData, setSignupData] = useState({
-    fullName: "",
-    cpf: "",
-    password: "",
-    role: "medico",
-  });
 
   // --- FUNÇÕES DE API ---
 
@@ -47,101 +29,120 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Usando safeParse para validação segura
-      const result = loginSchema.safeParse(loginData);
-      
-      if (!result.success) {
-        handleError(result.error);
+      // Validação básica
+      if (!loginData.cpf || !loginData.password) {
+        toast.error("Preencha todos os campos");
         setLoading(false);
         return;
       }
 
-      const validated = result.data;
+      // Se não for admin, remove formatação do CPF
+      const loginValue = loginData.cpf.toLowerCase() === 'admin' 
+        ? 'admin' 
+        : loginData.cpf.replace(/[^\d]+/g, "");
       
-      // Simulação de delay de rede
-      await new Promise(resolve => setTimeout(resolve, 1500)); 
+      console.log("Tentando login com:", { cpf: loginValue, password: "***" });
+      
+      // Chama a API de autenticação
+      const response = await fetch(`${API_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          cpf: loginValue,
+          password: loginData.password,
+        }),
+      });
 
-      // --- LÓGICA DE MÚLTIPLOS ACESSOS (MOCK) ---
-      const mockUser = TEST_ACCOUNTS.find(
-        u => u.cpf === validated.cpf && u.pass === validated.password
-      );
+      console.log("Resposta da API:", response.status, response.statusText);
 
-      if (mockUser) {
-          // Aqui salvamos o "Crachá" do usuário
-          localStorage.setItem("userRole", mockUser.role);
-          localStorage.setItem("userName", "Usuário de Teste");
-
-          toast.success(`Bem-vindo! Acesso: ${mockUser.label}`);
-          
-          // Redireciona para a rota definida (agora todos vão para /dashboard)
-          navigate(mockUser.route);
-          return;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Erro ao processar resposta" }));
+        console.error("Erro na resposta:", errorData);
+        throw new Error(errorData.error || "Credenciais inválidas. Verifique CPF ou senha.");
       }
 
-      throw new Error("Credenciais inválidas. Verifique CPF ou senha.");
+      const data = await response.json();
+      console.log("Login bem-sucedido:", data);
+      
+      // Salva token e dados do usuário no localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userRole", data.pessoa.funcionario?.cargo?.toLowerCase() || "medico");
+      localStorage.setItem("userName", data.pessoa.nome);
+      localStorage.setItem("userId", String(data.pessoa.id));
+      
+      // Se for médico, salva o ID do funcionário também
+      if (data.pessoa.funcionario?.cargo === "MEDICO" && data.pessoa.id !== 0) {
+        // Busca o ID do funcionário
+        const funcionarioResponse = await fetch(`${API_URL}/medicos`);
+        if (funcionarioResponse.ok) {
+          const medicos = await funcionarioResponse.json();
+          const medico = medicos.find((m: any) => m.pessoaId === data.pessoa.id);
+          if (medico) {
+            localStorage.setItem("funcionarioId", String(medico.id));
+          }
+        }
+      }
+
+      const roleLabel = data.pessoa.funcionario?.cargo === "MEDICO" ? "Médico(a)" :
+                       data.pessoa.funcionario?.cargo === "ENFERMEIRO" ? "Enfermeiro(a)" :
+                       data.pessoa.funcionario?.cargo === "ADMINISTRATIVO" ? "Administrador" : "Usuário";
+
+      toast.success(`Bem-vindo, ${data.pessoa.nome}! Acesso: ${roleLabel}`);
+      
+      // Redireciona baseado no cargo
+      const roleLower = data.pessoa.funcionario?.cargo?.toLowerCase();
+      if (roleLower === 'administrativo' || roleLower === 'admin') {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
 
     } catch (error) {
+      console.error("Erro no login:", error);
       handleError(error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const result = signUpSchema.safeParse(signupData);
-
-      if (!result.success) {
-        handleError(result.error);
-        setLoading(false);
-        return;
-      }
-      
-      // Simulação de cadastro
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      toast.success("Conta criada! Faça login para continuar.");
-      setActiveTab("login");
-      setLoginData({ cpf: signupData.cpf, password: "" });
-      
-    } catch (error) {
-      handleError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleError = (error: unknown) => {
     if (error instanceof z.ZodError) {
-      toast.error(error.issues[0].message);
+      toast.error(error.issues[0].message, { duration: 4000 });
     } else if (error instanceof Error) {
-      toast.error(error.message);
+      let errorMessage = error.message;
+      if (errorMessage.includes("CPF ou senha incorretos") || errorMessage.includes("Credenciais inválidas")) {
+        errorMessage = "CPF ou senha incorretos";
+      }
+      toast.error(errorMessage, { duration: 4000 });
     } else {
-      toast.error("Erro inesperado");
+      toast.error("Erro inesperado", { duration: 4000 });
     }
   };
 
   const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-    form: "login" | "signup",
+    e: React.ChangeEvent<HTMLInputElement>,
     field: string
   ) => {
     let value = e.target.value;
     if (field === 'cpf') {
+      // Se começar com letra ou for "admin", permite texto (login)
+      if (/^[a-zA-Z]/.test(value) || value.toLowerCase().startsWith('admin')) {
+        // Permite letras e números para login
+        value = value;
+      } else {
+        // Se for apenas números, formata como CPF
         value = value.replace(/\D/g, '')
             .replace(/(\d{3})(\d)/, '$1.$2')
             .replace(/(\d{3})(\d)/, '$1.$2')
             .replace(/(\d{3})(\d{1,2})/, '$1-$2')
             .replace(/(-\d{2})\d+?$/, '$1');
+      }
     }
 
-    if (form === "login") {
-      setLoginData({ ...loginData, [field as keyof typeof loginData]: value });
-    } else {
-      setSignupData({ ...signupData, [field as keyof typeof signupData]: value });
-    }
+    setLoginData({ ...loginData, [field as keyof typeof loginData]: value });
   };
 
   return (
@@ -173,55 +174,27 @@ const Login = () => {
       <div className="flex items-center justify-center p-4 bg-gray-50">
         <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
 
-          {/* Abas */}
-          <div className="flex p-1 bg-purple-50 rounded-xl mb-8">
-            <button
-              onClick={() => setActiveTab("login")}
-              className={`flex-1 py-2.5 text-base font-semibold rounded-lg transition-all duration-200 ${
-                activeTab === "login"
-                  ? "bg-white text-purple-700 shadow-sm"
-                  : "text-purple-400 hover:text-purple-600"
-              }`}
-            >
-              Entrar
-            </button>
-            <button
-              onClick={() => setActiveTab("signup")}
-              className={`flex-1 py-2.5 text-base font-semibold rounded-lg transition-all duration-200 ${
-                activeTab === "signup"
-                  ? "bg-white text-purple-700 shadow-sm"
-                  : "text-purple-400 hover:text-purple-600"
-              }`}
-            >
-              Cadastrar
-            </button>
-          </div>
-
           <div className="text-center space-y-2 mb-8">
             <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-              {activeTab === "login" ? "Bem-vindo de volta" : "Criar nova conta"}
+              Bem-vindo de volta
             </h2>
             <p className="text-base text-gray-500">
-              {activeTab === "login" 
-                ? "Acesse o painel com suas credenciais" 
-                : "Preencha os dados para solicitar acesso"}
+              Acesse o painel com suas credenciais
             </p>
           </div>
 
           {/* FORMULÁRIO LOGIN */}
-          {activeTab === "login" && (
-            <form onSubmit={handleLogin} className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5">
               <div className="space-y-2">
-                <label className="text-base font-medium text-gray-700 ml-1">CPF</label>
+                <label className="text-base font-medium text-gray-700 ml-1">CPF ou Login</label>
                 <div className="relative">
                   <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="000.000.000-00"
+                    placeholder="CPF ou login (ex: admin)"
                     className="w-full h-12 pl-10 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
                     value={loginData.cpf}
-                    onChange={(e) => handleInputChange(e, "login", "cpf")}
-                    maxLength={14}
+                    onChange={(e) => handleInputChange(e, "cpf")}
                   />
                 </div>
               </div>
@@ -235,7 +208,7 @@ const Login = () => {
                     placeholder="••••••••"
                     className="w-full h-12 pl-10 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
                     value={loginData.password}
-                    onChange={(e) => handleInputChange(e, "login", "password")}
+                    onChange={(e) => handleInputChange(e, "password")}
                   />
                 </div>
               </div>
@@ -248,77 +221,6 @@ const Login = () => {
                 {loading ? <Loader2 className="animate-spin" /> : "Acessar Sistema"}
               </button>
             </form>
-          )}
-
-          {/* FORMULÁRIO CADASTRO */}
-          {activeTab === "signup" && (
-            <form onSubmit={handleSignup} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-base font-medium text-gray-700 ml-1">Nome Completo</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Seu nome completo"
-                    className="w-full h-12 pl-10 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
-                    value={signupData.fullName}
-                    onChange={(e) => handleInputChange(e, "signup", "fullName")}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-base font-medium text-gray-700 ml-1">CPF</label>
-                <div className="relative">
-                  <FileText className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="000.000.000-00"
-                    className="w-full h-12 pl-10 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
-                    value={signupData.cpf}
-                    onChange={(e) => handleInputChange(e, "signup", "cpf")}
-                    maxLength={14}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-base font-medium text-gray-700 ml-1">Senha</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                  <input
-                    type="password"
-                    placeholder="Mínimo 6 caracteres"
-                    className="w-full h-12 pl-10 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none"
-                    value={signupData.password}
-                    onChange={(e) => handleInputChange(e, "signup", "password")}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-base font-medium text-gray-700 ml-1">Perfil de Acesso</label>
-                <select
-                  className="w-full h-12 px-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-900 text-base focus:bg-white focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none cursor-pointer"
-                  value={signupData.role}
-                  onChange={(e) => handleInputChange(e, "signup", "role")}
-                >
-                  <option value="medico">Médico(a)</option>
-                  <option value="enfermeiro">Enfermeiro(a)</option>
-                  <option value="recepcao">Recepção</option>
-                  <option value="admin">Administrador</option>
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full h-12 flex items-center justify-center rounded-lg bg-purple-600 text-white text-base font-bold hover:bg-purple-700 active:scale-[0.98] transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
-              >
-                {loading ? <Loader2 className="animate-spin" /> : "Criar Conta"}
-              </button>
-            </form>
-          )}
         </div>
       </div>
     </div>

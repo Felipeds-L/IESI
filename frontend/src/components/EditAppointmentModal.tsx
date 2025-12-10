@@ -10,6 +10,7 @@ import {
   Users,
   Activity,
   Syringe,
+  Search,
 } from "lucide-react";
 
 export interface AppointmentData {
@@ -37,6 +38,19 @@ interface EditAppointmentModalProps {
   isReadOnly?: boolean;
 }
 
+const API_URL = "http://localhost:3000";
+
+interface Paciente {
+  id: number;
+  nome: string;
+  paciente?: {
+    cpf: string;
+    dataNascimento?: string;
+    sexo?: string;
+    responsavelNome?: string;
+  };
+}
+
 export function EditAppointmentModal({
   isOpen,
   onClose,
@@ -45,6 +59,10 @@ export function EditAppointmentModal({
   isReadOnly = false,
 }: EditAppointmentModalProps) {
   const [formData, setFormData] = useState<AppointmentData | null>(null);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [medicos, setMedicos] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showPatientSearch, setShowPatientSearch] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -68,14 +86,169 @@ export function EditAppointmentModal({
           procedureType: "",
         });
       }
+      loadPacientes();
+      loadMedicos();
+
+      // Preenche ID do médico automaticamente se for médico logado
+      const funcionarioId = localStorage.getItem("funcionarioId");
+      const userRole = localStorage.getItem("userRole");
+      if (userRole === "medico" && funcionarioId && !appointment) {
+        setFormData((prev) =>
+          prev ? { ...prev, doctorId: funcionarioId } : null
+        );
+      }
     }
   }, [appointment, isOpen]);
+
+  const loadPacientes = async () => {
+    try {
+      const response = await fetch(`${API_URL}/pacientes`);
+      if (response.ok) {
+        const data = await response.json();
+        setPacientes(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar pacientes:", error);
+    }
+  };
+
+  const loadMedicos = async () => {
+    try {
+      const response = await fetch(`${API_URL}/medicos`);
+      if (response.ok) {
+        const data = await response.json();
+        setMedicos(data);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar médicos:", error);
+    }
+  };
+
+  const handleSelectPatient = (paciente: Paciente) => {
+    if (!formData || isReadOnly) {
+      console.log(
+        "[AGENDAMENTO] Não pode selecionar - formData:",
+        formData,
+        "isReadOnly:",
+        isReadOnly
+      );
+      return;
+    }
+
+    console.log("[AGENDAMENTO] Paciente selecionado:", paciente);
+    console.log("[AGENDAMENTO] formData atual antes da atualização:", formData);
+
+    const idade = paciente.paciente?.dataNascimento
+      ? (() => {
+          const hoje = new Date();
+          const nascimento = new Date(paciente.paciente.dataNascimento);
+          const idade = hoje.getFullYear() - nascimento.getFullYear();
+          const mes = hoje.getMonth() - nascimento.getMonth();
+          return mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())
+            ? idade - 1
+            : idade;
+        })()
+      : "";
+
+    const updatedData: AppointmentData = {
+      ...formData,
+      patient: paciente.nome,
+      patientId: String(paciente.id),
+      patientGender: paciente.paciente?.sexo || "",
+      patientAge: idade ? String(idade) : "",
+      // Removido patientGuardian - não será mais usado no formulário
+    };
+
+    console.log("[AGENDAMENTO] Dados atualizados:", updatedData);
+    console.log(
+      "[AGENDAMENTO] Nome do paciente que será setado:",
+      updatedData.patient
+    );
+
+    // Atualiza o estado de forma explícita
+    setFormData((prev) => {
+      if (!prev) return null;
+      const newData = {
+        ...prev,
+        patient: paciente.nome,
+        patientId: String(paciente.id),
+        patientGender: paciente.paciente?.sexo || "",
+        patientAge: idade ? String(idade) : "",
+      };
+      console.log("[AGENDAMENTO] Novo estado dentro do setFormData:", newData);
+      return newData;
+    });
+
+    setShowPatientSearch(false);
+    setSearchTerm("");
+  };
+
+  // Fecha o dropdown ao clicar fora
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Não fecha se clicar dentro do container de busca ou no dropdown
+      if (!target.closest(".patient-search-container")) {
+        setShowPatientSearch(false);
+      }
+    };
+
+    if (showPatientSearch) {
+      // Adiciona um pequeno delay para não fechar imediatamente ao clicar no campo
+      const timeoutId = setTimeout(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+      }, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showPatientSearch]);
+
+  const filteredPacientes =
+    searchTerm.trim() === ""
+      ? pacientes // Se não há texto, mostra todos
+      : pacientes.filter(
+          (paciente) =>
+            paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            paciente.paciente?.cpf.includes(searchTerm.replace(/\D/g, ""))
+        );
 
   if (!isOpen || !formData) return null;
 
   const handleChange = (field: keyof AppointmentData, value: string) => {
     // Se for apenas leitura, bloqueamos a edição
     if (isReadOnly) return;
+
+    // Formatação de data (DD/MM)
+    if (field === "date") {
+      // Remove tudo que não é número
+      let digits = value.replace(/\D/g, "");
+      // Limita a 4 dígitos (DDMM)
+      if (digits.length > 4) digits = digits.slice(0, 4);
+      // Formata DD/MM
+      if (digits.length >= 2) {
+        value = digits.slice(0, 2) + "/" + digits.slice(2);
+      } else {
+        value = digits;
+      }
+    }
+
+    // Formatação de hora (HH:MM)
+    if (field === "time") {
+      // Remove tudo que não é número
+      let digits = value.replace(/\D/g, "");
+      // Limita a 4 dígitos (HHMM)
+      if (digits.length > 4) digits = digits.slice(0, 4);
+      // Formata HH:MM
+      if (digits.length >= 2) {
+        value = digits.slice(0, 2) + ":" + digits.slice(2);
+      } else {
+        value = digits;
+      }
+    }
+
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
@@ -126,6 +299,7 @@ export function EditAppointmentModal({
                 <input
                   type="text"
                   disabled={isReadOnly}
+                  maxLength={5}
                   value={formData.date}
                   onChange={(e) => handleChange("date", e.target.value)}
                   className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm disabled:bg-gray-100 disabled:text-gray-500"
@@ -139,6 +313,7 @@ export function EditAppointmentModal({
                 <input
                   type="text"
                   disabled={isReadOnly}
+                  maxLength={5}
                   value={formData.time}
                   onChange={(e) => handleChange("time", e.target.value)}
                   className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm disabled:bg-gray-100 disabled:text-gray-500"
@@ -170,37 +345,100 @@ export function EditAppointmentModal({
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
               <User size={16} /> Dados do Paciente
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-2">
+
+            {/* Busca de Paciente */}
+            {!isReadOnly && (
+              <div className="mb-4 relative patient-search-container">
                 <label className="block text-sm font-semibold text-gray-500 mb-1">
-                  ID Paciente
+                  Buscar Paciente Cadastrado
                 </label>
                 <div className="relative">
-                  <Hash
-                    size={12}
-                    className="absolute left-2 top-3 text-gray-400"
-                  />
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <input
-                    disabled={isReadOnly}
-                    className="w-full border rounded-lg p-2 pl-6 bg-gray-50 text-sm disabled:bg-gray-100 disabled:text-gray-500"
-                    value={formData.patientId || ""}
-                    onChange={(e) => handleChange("patientId", e.target.value)}
-                    placeholder="000"
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setShowPatientSearch(true);
+                    }}
+                    onFocus={() => {
+                      console.log("[AGENDAMENTO] Campo de busca focado");
+                      setShowPatientSearch(true);
+                    }}
+                    onClick={() => {
+                      console.log("[AGENDAMENTO] Campo de busca clicado");
+                      setShowPatientSearch(true);
+                    }}
+                    className="w-full border rounded-lg p-2 pl-9 focus:ring-2 focus:ring-purple-500 outline-none text-sm"
+                    placeholder="Digite o nome ou CPF do paciente..."
                   />
+                  {showPatientSearch && (
+                    <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {filteredPacientes.length === 0 ? (
+                        <div className="p-4 text-sm text-gray-500 text-center">
+                          {searchTerm
+                            ? "Nenhum paciente encontrado"
+                            : "Digite para buscar ou selecione abaixo"}
+                        </div>
+                      ) : (
+                        <>
+                          {!searchTerm && (
+                            <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
+                              {filteredPacientes.length} paciente(s)
+                              cadastrado(s)
+                            </div>
+                          )}
+                          {filteredPacientes.map((paciente) => (
+                            <button
+                              key={paciente.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                console.log(
+                                  "[AGENDAMENTO] Botão clicado para paciente:",
+                                  paciente
+                                );
+                                handleSelectPatient(paciente);
+                              }}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                              }}
+                              className="w-full text-left p-3 hover:bg-purple-50 border-b border-gray-100 last:border-0 cursor-pointer transition-colors"
+                            >
+                              <div className="font-medium text-gray-900">
+                                {paciente.nome}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                CPF: {paciente.paciente?.cpf || "-"}
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-6">
                 <label className="block text-sm font-semibold text-gray-500 mb-1">
                   Nome Completo
                 </label>
                 <input
                   disabled={isReadOnly}
-                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none font-medium disabled:bg-gray-100 disabled:text-gray-500"
-                  value={formData.patient}
-                  onChange={(e) => handleChange("patient", e.target.value)}
-                  placeholder="Nome do Paciente"
+                  readOnly
+                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none font-medium bg-gray-50 text-gray-700 cursor-not-allowed"
+                  value={formData?.patient || ""}
+                  placeholder="Selecione um paciente acima"
                 />
+                {formData?.patient && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ Paciente selecionado
+                  </p>
+                )}
               </div>
 
               <div className="md:col-span-2">
@@ -235,21 +473,6 @@ export function EditAppointmentModal({
                   <option value="Outro">Outro</option>
                 </select>
               </div>
-
-              <div className="md:col-span-12">
-                <label className="block text-sm font-semibold text-gray-500 mb-1 flex items-center gap-1">
-                  <Users size={12} /> Nome do Responsável
-                </label>
-                <input
-                  disabled={isReadOnly}
-                  className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100 disabled:text-gray-500"
-                  value={formData.patientGuardian || ""}
-                  onChange={(e) =>
-                    handleChange("patientGuardian", e.target.value)
-                  }
-                  placeholder="Nome do pai, mãe ou responsável legal"
-                />
-              </div>
             </div>
           </div>
 
@@ -260,27 +483,39 @@ export function EditAppointmentModal({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-500 mb-1">
-                  ID Médico
+                  Médico
                 </label>
-                <input
+                <select
                   disabled={isReadOnly}
-                  className="w-full border rounded-lg p-2 bg-gray-50 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                  className="w-full border rounded-lg p-2 bg-white text-sm disabled:bg-gray-100 disabled:text-gray-500 focus:ring-2 focus:ring-purple-500 outline-none"
                   value={formData.doctorId || ""}
-                  onChange={(e) => handleChange("doctorId", e.target.value)}
-                  placeholder="CRM/ID"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold text-gray-500 mb-1">
-                  Especialidade
-                </label>
-                <input
-                  disabled={isReadOnly}
-                  type="text"
-                  value={formData.specialty}
-                  onChange={(e) => handleChange("specialty", e.target.value)}
-                  className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-purple-500 outline-none text-sm disabled:bg-gray-100 disabled:text-gray-500"
-                />
+                  onChange={(e) => {
+                    handleChange("doctorId", e.target.value);
+                    // Preenche especialidade automaticamente ao selecionar médico
+                    if (e.target.value) {
+                      const medicoSelecionado = medicos.find(
+                        (m) => String(m.id) === e.target.value
+                      );
+                      if (
+                        medicoSelecionado &&
+                        medicoSelecionado.especialidade
+                      ) {
+                        handleChange(
+                          "specialty",
+                          medicoSelecionado.especialidade
+                        );
+                      }
+                    }
+                  }}
+                >
+                  <option value="">Selecione um médico</option>
+                  {medicos.map((medico) => (
+                    <option key={medico.id} value={String(medico.id)}>
+                      {medico.nome} - CRM: {medico.crm || "N/A"}{" "}
+                      {medico.especialidade ? `(${medico.especialidade})` : ""}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-500 mb-1 flex items-center gap-1">

@@ -6,6 +6,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -99,7 +100,7 @@ const CalendarWidget = ({
                 className={`w-8 h-8 flex items-center justify-center rounded-full transition cursor-pointer 
                                 ${
                                   isSelected
-                                    ? "bg-purple-600 text-white font-bold shadow-md shadow-purple-200"
+                                    ? "bg-purple-700 text-white font-bold shadow-md shadow-purple-200"
                                     : "text-gray-700 hover:bg-purple-100 hover:text-purple-700"
                                 }`}
               >
@@ -140,36 +141,92 @@ export default function DashboardPage() {
     useState<AppointmentData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [userRole, setUserRole] = useState<string>("");
+  const [showOnlyMyAppointments, setShowOnlyMyAppointments] = useState(false);
 
   // 2. Efeitos
   useEffect(() => {
     async function loadAppointments() {
       try {
-        const res = await fetch("http://localhost:3000/agendamentos");
-        if (!res.ok) throw new Error("Erro ao buscar agendamentos");
+        const role = localStorage.getItem("userRole");
+        const funcionarioId = localStorage.getItem("funcionarioId");
+        setUserRole(role || "");
+
+        // Carrega TODOS os agendamentos (o filtro será aplicado no frontend)
+        let url = "http://localhost:3000/agendamentos";
+        // Não filtra no backend - vamos filtrar no frontend baseado no estado showOnlyMyAppointments
+
+        console.log("[DASHBOARD] Carregando agendamentos de:", url);
+        console.log(
+          "[DASHBOARD] userRole:",
+          userRole,
+          "funcionarioId:",
+          funcionarioId
+        );
+        const res = await fetch(url);
+        if (!res.ok) {
+          console.error(
+            "[DASHBOARD] Erro na resposta:",
+            res.status,
+            res.statusText
+          );
+          throw new Error("Erro ao buscar agendamentos");
+        }
 
         const data = await res.json();
+        console.log("[DASHBOARD] Dados recebidos do backend:", data);
+        console.log(
+          "[DASHBOARD] Total de agendamentos recebidos:",
+          data.length
+        );
 
         // 🔥 Normalização dos dados vindos do backend
         const normalized = data.map((item: any) => ({
           id: item.id,
-          date: item.dataHora?.split("T")[0] ?? "",
+          date: item.dataHora
+            ? (() => {
+                const [datePart] = item.dataHora.split("T");
+                const [year, month, day] = datePart.split("-");
+                return `${day}/${month}`;
+              })()
+            : "",
           time: item.dataHora?.split("T")[1]?.substring(0, 5) ?? "",
-          patient: item.nomePaciente ?? "",
+          patient: item.paciente?.pessoa?.nome ?? item.nomePaciente ?? "",
           doctor: item.funcionario?.crm ?? "", // aqui pode vir undefined
           specialty: item.especialidade ?? "",
           status: item.status ?? "",
-          patientGender: item.sexo ?? "",
-          patientAge: item.idade ? String(item.idade) : "",
-          patientGuardian: item.responsavelNome ?? "",
+          patientGender: item.paciente?.sexo ?? item.sexo ?? "",
+          patientAge: item.paciente?.dataNascimento
+            ? (() => {
+                const hoje = new Date();
+                const nascimento = new Date(item.paciente.dataNascimento);
+                const idade = hoje.getFullYear() - nascimento.getFullYear();
+                const mes = hoje.getMonth() - nascimento.getMonth();
+                return String(
+                  mes < 0 ||
+                    (mes === 0 && hoje.getDate() < nascimento.getDate())
+                    ? idade - 1
+                    : idade
+                );
+              })()
+            : item.idade
+            ? String(item.idade)
+            : "",
+          patientGuardian:
+            item.paciente?.responsavelNome ?? item.responsavelNome ?? "",
           problemDescription: item.descricao ?? "",
           procedureType: item.tipoConsulta ?? "",
           doctorId: item.funcionarioId ? String(item.funcionarioId) : "",
+          patientId: item.pacienteId ? String(item.pacienteId) : "",
         }));
 
+        console.log("[DASHBOARD] Agendamentos normalizados:", normalized);
+        console.log(
+          "[DASHBOARD] Total de agendamentos normalizados:",
+          normalized.length
+        );
         setAppointments(normalized);
       } catch (error) {
-        console.error(error);
+        console.error("[DASHBOARD] Erro ao carregar agendamentos:", error);
         toast.error("Erro ao carregar agendamentos");
       }
     }
@@ -237,20 +294,84 @@ export default function DashboardPage() {
 
   const handleSaveAppointment = async (newAppointment: AppointmentData) => {
     try {
+      console.log("[DASHBOARD] Salvando agendamento:", newAppointment);
+
+      // Valida data e hora
+      console.log("[DASHBOARD] newAppointment.date:", newAppointment.date);
+      console.log("[DASHBOARD] newAppointment.time:", newAppointment.time);
+
+      if (!newAppointment.date || !newAppointment.time) {
+        console.error("[DASHBOARD] Data ou hora faltando!");
+        toast.error("Data e hora são obrigatórias");
+        return;
+      }
+
       // Monta dataHora (DD/MM + HH:mm → ISO)
-      const [day, month] = newAppointment.date.split("/");
-      const year = new Date().getFullYear(); // ou defina outro ano
-      const dataHora = `${year}-${month}-${day}T${newAppointment.time}:00.000Z`;
+      const dateParts = newAppointment.date.split("/");
+      if (dateParts.length !== 2) {
+        console.error(
+          "[DASHBOARD] Formato de data inválido:",
+          newAppointment.date
+        );
+        toast.error("Formato de data inválido. Use DD/MM");
+        return;
+      }
+
+      const [day, month] = dateParts;
+      const year = new Date().getFullYear();
+
+      // Remove espaços e valida se a hora está no formato correto
+      const timeStr = newAppointment.time.trim();
+      const timeParts = timeStr.split(":");
+      if (timeParts.length !== 2) {
+        console.error(
+          "[DASHBOARD] Formato de hora inválido:",
+          newAppointment.time
+        );
+        toast.error("Formato de hora inválido. Use HH:MM");
+        return;
+      }
+
+      const [hours, minutes] = timeParts;
+
+      // Valida se horas e minutos são números válidos
+      if (isNaN(Number(hours)) || isNaN(Number(minutes))) {
+        console.error(
+          "[DASHBOARD] Hora ou minuto não é número:",
+          hours,
+          minutes
+        );
+        toast.error("Hora e minuto devem ser números");
+        return;
+      }
+
+      if (Number(hours) < 0 || Number(hours) > 23) {
+        toast.error("Hora deve estar entre 00 e 23");
+        return;
+      }
+
+      if (Number(minutes) < 0 || Number(minutes) > 59) {
+        toast.error("Minutos devem estar entre 00 e 59");
+        return;
+      }
+
+      const dataHora = `${year}-${month.padStart(2, "0")}-${day.padStart(
+        2,
+        "0"
+      )}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00.000Z`;
+
+      console.log("[DASHBOARD] Data/Hora montada:", dataHora);
+      console.log("[DASHBOARD] Validação da data:", new Date(dataHora));
 
       // Converte para o formato do backend
-      const payload = {
+      const payload: any = {
         dataHora,
         status: newAppointment.status || "AGENDADO",
         tipoConsulta: newAppointment.procedureType,
         especialidade: newAppointment.specialty,
         descricao: newAppointment.problemDescription,
         sexo: newAppointment.patientGender,
-        idade: Number(newAppointment.patientAge),
+        idade: Number(newAppointment.patientAge) || undefined,
         responsavelNome: newAppointment.patientGuardian,
         nomePaciente: newAppointment.patient,
         funcionarioId: Number(newAppointment.doctorId),
@@ -271,11 +392,19 @@ export default function DashboardPage() {
       const created = await response.json();
 
       // 🔥 Normaliza o novo agendamento
+      // Converte a data de YYYY-MM-DD para DD/MM
+      let formattedDate = "";
+      if (created.dataHora) {
+        const [datePart] = created.dataHora.split("T");
+        const [year, month, day] = datePart.split("-");
+        formattedDate = `${day}/${month}`;
+      }
+
       const normalizedCreated: AppointmentData = {
         id: created.id,
-        date: created.dataHora?.split("T")[0] ?? "",
+        date: formattedDate,
         time: created.dataHora?.split("T")[1]?.substring(0, 5) ?? "",
-        patient: created.nomePaciente ?? "",
+        patient: created.paciente?.pessoa?.nome ?? created.nomePaciente ?? "",
         doctor: created.funcionario?.crm ?? "",
         specialty: created.especialidade ?? "",
         status: created.status ?? "",
@@ -287,18 +416,87 @@ export default function DashboardPage() {
         doctorId: created.funcionarioId ? String(created.funcionarioId) : "",
       };
 
-      setAppointments((prev) => [normalizedCreated, ...prev]);
+      console.log(
+        "[DASHBOARD] Agendamento criado e normalizado:",
+        normalizedCreated
+      );
+      console.log(
+        "[DASHBOARD] Data formatada:",
+        formattedDate,
+        "Data selecionada:",
+        selectedDate
+      );
+
+      // Recarrega a lista completa para garantir sincronização
+      // Carrega TODOS os agendamentos (o filtro será aplicado no frontend)
+      let url = "http://localhost:3000/agendamentos";
+
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const normalized = data.map((item: any) => ({
+          id: item.id,
+          date: item.dataHora
+            ? (() => {
+                const [datePart] = item.dataHora.split("T");
+                const [year, month, day] = datePart.split("-");
+                return `${day}/${month}`;
+              })()
+            : "",
+          time: item.dataHora?.split("T")[1]?.substring(0, 5) ?? "",
+          patient: item.paciente?.pessoa?.nome ?? item.nomePaciente ?? "",
+          doctor: item.funcionario?.crm ?? "",
+          specialty: item.especialidade ?? "",
+          status: item.status ?? "",
+          patientGender: item.sexo ?? "",
+          patientAge: item.idade ? String(item.idade) : "",
+          patientGuardian: item.responsavelNome ?? "",
+          problemDescription: item.descricao ?? "",
+          procedureType: item.tipoConsulta ?? "",
+          doctorId: item.funcionarioId ? String(item.funcionarioId) : "",
+          patientId: item.pacienteId ? String(item.pacienteId) : "",
+        }));
+        setAppointments(normalized);
+        console.log(
+          "[DASHBOARD] Lista recarregada com",
+          normalized.length,
+          "agendamentos"
+        );
+      }
+
       toast.success("Agendamento criado!");
       setIsModalOpen(false);
     } catch (err) {
       console.error(err);
-      toast.error("Erro ao criar agendamento");
+      // Mensagens de erro mais amigáveis
+      let errorMessage = "Erro ao criar agendamento";
+      if (error.message) {
+        errorMessage = error.message;
+        if (errorMessage.includes("Paciente não encontrado")) {
+          errorMessage = "Paciente não encontrado. Verifique o ID do paciente";
+        } else if (
+          errorMessage.includes("data do agendamento deve ser futura")
+        ) {
+          errorMessage = "A data do agendamento deve ser futura";
+        } else if (errorMessage.includes("Data/hora inválida")) {
+          errorMessage = "Data ou hora inválida. Verifique o formato";
+        }
+      }
+      toast.error(errorMessage, { duration: 4000 });
     }
   };
 
   // 4. Filtragem e Paginação
 
   const getFilteredAppointments = () => {
+    console.log(
+      "[DASHBOARD] Filtrando agendamentos. Total:",
+      appointments.length
+    );
+    console.log("[DASHBOARD] activeTab:", activeTab);
+    console.log("[DASHBOARD] selectedDate:", selectedDate);
+    console.log("[DASHBOARD] searchTerm:", searchTerm);
+
     let filtered = appointments.filter((item) => {
       const term = searchTerm.toLowerCase();
       return (
@@ -307,14 +505,47 @@ export default function DashboardPage() {
       );
     });
 
-    if (activeTab === "agendamentos") {
+    console.log("[DASHBOARD] Após filtro de busca:", filtered.length);
+
+    // Filtro para "Meus Agendamentos" (apenas para médicos)
+    if (showOnlyMyAppointments && userRole === "medico") {
+      const funcionarioId = localStorage.getItem("funcionarioId");
       filtered = filtered.filter((item) => {
-        const [, month, day] = item.date.split("-");
-        const formattedDate = `${day}/${month}`;
-        return formattedDate === selectedDate;
+        const matches = item.doctorId === funcionarioId;
+        console.log(
+          "[DASHBOARD] Filtro 'Meus Agendamentos':",
+          item.doctorId,
+          "===",
+          funcionarioId,
+          "=",
+          matches
+        );
+        return matches;
       });
+      console.log(
+        "[DASHBOARD] Após filtro 'Meus Agendamentos':",
+        filtered.length
+      );
     }
 
+    if (activeTab === "agendamentos") {
+      filtered = filtered.filter((item) => {
+        // A data já vem no formato DD/MM
+        const matches = item.date === selectedDate;
+        console.log(
+          "[DASHBOARD] Comparando data:",
+          item.date,
+          "com",
+          selectedDate,
+          "=",
+          matches
+        );
+        return matches;
+      });
+      console.log("[DASHBOARD] Após filtro de data:", filtered.length);
+    }
+
+    console.log("[DASHBOARD] Total filtrado final:", filtered.length);
     return filtered;
   };
 
@@ -348,48 +579,70 @@ export default function DashboardPage() {
 
       <Sidebar active="agenda" />
 
-      <main className="flex-1 ml-72 p-8">
+      <main className="flex-1 ml-72 p-8 bg-gray-50">
         <div className="max-w-8xl mx-auto">
-          <header className="flex justify-between items-start mb-8">
-            <div>
-              <h1 className="text-3xl font-extrabold text-gray-900 mb-1 tracking-tight">
-                Painel de Atendimento
-              </h1>
-              <p className="text-gray-500 font-medium">
-                Data Selecionada: {selectedDate}
-              </p>
+          {/* Header simples */}
+          <div className="bg-purple-800 rounded-lg shadow p-6 mb-6 text-white">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-3xl font-bold mb-2">
+                  Agenda de Atendimentos
+                </h1>
+                <p className="text-purple-200">
+                  Data: <span className="font-semibold">{selectedDate}</span> •{" "}
+                  {appointments.filter((a) => a.date === selectedDate).length}{" "}
+                  agendamentos
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {userRole === "medico" && (
+                  <button
+                    onClick={() =>
+                      setShowOnlyMyAppointments(!showOnlyMyAppointments)
+                    }
+                    className={`px-4 py-2 rounded font-medium transition flex items-center gap-2 ${
+                      showOnlyMyAppointments
+                        ? "bg-white text-purple-800"
+                        : "bg-purple-700 text-white hover:bg-purple-600"
+                    }`}
+                  >
+                    <CalendarIcon size={16} />
+                    {showOnlyMyAppointments ? "Todos" : "Meus"}
+                  </button>
+                )}
+                {!isReadOnly && (
+                  <button
+                    onClick={handleNewAppointment}
+                    className="bg-white text-purple-800 px-5 py-2 rounded font-semibold hover:bg-purple-50 transition flex items-center gap-2"
+                  >
+                    <Plus size={18} /> Novo
+                  </button>
+                )}
+              </div>
             </div>
-            {!isReadOnly && (
-              <button
-                onClick={handleNewAppointment}
-                className="flex items-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-purple-700 transition shadow-lg shadow-purple-200"
-              >
-                <Plus size={20} /> Novo Agendamento
-              </button>
-            )}
-          </header>
+          </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-            <div className="bg-white p-1 rounded-xl inline-flex shadow-sm border border-gray-100 whitespace-nowrap">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <div className="bg-white p-1 rounded inline-flex border border-gray-300 whitespace-nowrap">
               <button
                 onClick={() => setActiveTab("agendamentos")}
-                className={`px-6 py-2.5 rounded-lg font-medium transition ${
+                className={`px-4 py-2 rounded font-medium transition ${
                   activeTab === "agendamentos"
-                    ? "bg-purple-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-purple-800 text-white"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                Agendamentos ({selectedDate})
+                Agendamentos
               </button>
               <button
                 onClick={() => setActiveTab("historico")}
-                className={`px-6 py-2.5 rounded-lg font-medium transition ml-2 ${
+                className={`px-4 py-2 rounded font-medium transition ${
                   activeTab === "historico"
-                    ? "bg-purple-600 text-white shadow-md"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-purple-800 text-white"
+                    : "text-gray-700 hover:bg-gray-100"
                 }`}
               >
-                Histórico Completo
+                Histórico
               </button>
             </div>
             <div className="relative w-full max-w-md">
@@ -402,7 +655,7 @@ export default function DashboardPage() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar paciente..."
-                className="w-full bg-white pl-12 pr-10 py-3 rounded-xl border border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-50 outline-none transition shadow-sm"
+                className="w-full bg-white pl-12 pr-10 py-3 rounded-xl border border-gray-200 focus:border-purple-600 focus:ring-2 focus:ring-purple-100 outline-none transition shadow-sm"
               />
               {searchTerm && (
                 <button
@@ -479,7 +732,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg border border-gray-200 hover:bg-white hover:text-purple-600 disabled:opacity-50 transition"
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-white hover:text-purple-700 disabled:opacity-50 transition"
                   >
                     <ChevronLeft size={20} />
                   </button>
@@ -490,7 +743,7 @@ export default function DashboardPage() {
                         onClick={() => handlePageChange(page)}
                         className={`w-10 h-10 rounded-lg font-medium transition ${
                           currentPage === page
-                            ? "bg-purple-600 text-white shadow-md"
+                            ? "bg-purple-700 text-white shadow-md"
                             : "text-gray-600 hover:bg-white border border-transparent hover:border-gray-200"
                         }`}
                       >
@@ -501,7 +754,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg border border-gray-200 hover:bg-white hover:text-purple-600 disabled:opacity-50 transition"
+                    className="p-2 rounded-lg border border-gray-200 hover:bg-white hover:text-purple-700 disabled:opacity-50 transition"
                   >
                     <ChevronRight size={20} />
                   </button>
