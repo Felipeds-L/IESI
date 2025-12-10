@@ -35,6 +35,8 @@ services:
       - DATABASE_URL=postgresql://docker:docker@postgres_db:5432/iesi_db?schema=public
       - PORT=3000
       - JWT_SECRET=sua_chave_secreta_super_segura_iesi_2025
+      - EMAIL_USER=gmomenezes1@gmail.com
+      - EMAIL_PASS=xtwo pkri fute tgmh
 
 
   frontend_app:

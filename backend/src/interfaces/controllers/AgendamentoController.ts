@@ -1,5 +1,4 @@
-// src/interfaces/controllers/AgendamentoController.ts
-
+import { EmailService } from "../../infra/services/EmailService";
 import { Request, Response } from "express";
 import { CreateAgendamentoUseCase } from "../../domain/usecases/CreateAgendamentoUseCase";
 import { AgendamentoRepositoryPrisma } from "../../infra/repositories/AgendamentoRepositoryPrisma";
@@ -9,6 +8,24 @@ export class AgendamentoController {
     private createAgendamentoUseCase: CreateAgendamentoUseCase,
     private agendamentoRepository: AgendamentoRepositoryPrisma
   ) {}
+
+  async sendConfirmation(req: Request, res: Response) {
+    const { email, appointmentDetails } = req.body;
+
+    if (!email || !appointmentDetails) {
+      return res.status(400).json({ error: "E-mail e detalhes do agendamento são obrigatórios." });
+    }
+
+    try {
+      const emailService = new EmailService();
+      await emailService.sendAppointmentConfirmation(email, appointmentDetails);
+      console.log(`[BACKEND] E-mail enviado para ${email}`);
+      return res.status(200).json({ message: "E-mail enviado com sucesso!" });
+    } catch (error: any) {
+      console.error("[BACKEND] Erro ao enviar e-mail:", error);
+      return res.status(500).json({ error: "Falha ao enviar e-mail de confirmação." });
+    }
+  }
 
   async create(req: Request, res: Response) {
     const data = req.body;
