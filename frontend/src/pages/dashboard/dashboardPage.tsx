@@ -394,7 +394,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error("Erro ao criar agendamento");
 
       const created = await response.json();
-
+      const nomeDoMedico = created.funcionario?.pessoa?.nome || created.funcionario?.nome || "Médico Responsável";
       // 🔥 Normaliza o novo agendamento
       // Converte a data de YYYY-MM-DD para DD/MM
       let formattedDate = "";
@@ -430,9 +430,8 @@ export default function DashboardPage() {
         "Data selecionada:",
         selectedDate
       );
-
+     
       // Recarrega a lista completa para garantir sincronização
-      // Carrega TODOS os agendamentos (o filtro será aplicado no frontend)
       let url = "http://localhost:3000/agendamentos";
 
       const res = await fetch(url);
@@ -476,7 +475,7 @@ export default function DashboardPage() {
         pacienteNome: normalizedCreated.patient,
         data: normalizedCreated.date,
         hora: normalizedCreated.time,
-        medicoNome: `Dr(a). ${normalizedCreated.doctor}` || "Médico Responsável", // Ajuste conforme disponível
+        medicoNome: `Dr(a). ${nomeDoMedico}` || "Médico Responsável", 
         especialidade: normalizedCreated.specialty
       });
 
