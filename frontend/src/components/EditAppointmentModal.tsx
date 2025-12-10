@@ -88,12 +88,14 @@ export function EditAppointmentModal({
       }
       loadPacientes();
       loadMedicos();
-      
+
       // Preenche ID do médico automaticamente se for médico logado
       const funcionarioId = localStorage.getItem("funcionarioId");
       const userRole = localStorage.getItem("userRole");
       if (userRole === "medico" && funcionarioId && !appointment) {
-        setFormData((prev) => prev ? { ...prev, doctorId: funcionarioId } : null);
+        setFormData((prev) =>
+          prev ? { ...prev, doctorId: funcionarioId } : null
+        );
       }
     }
   }, [appointment, isOpen]);
@@ -124,7 +126,12 @@ export function EditAppointmentModal({
 
   const handleSelectPatient = (paciente: Paciente) => {
     if (!formData || isReadOnly) {
-      console.log("[AGENDAMENTO] Não pode selecionar - formData:", formData, "isReadOnly:", isReadOnly);
+      console.log(
+        "[AGENDAMENTO] Não pode selecionar - formData:",
+        formData,
+        "isReadOnly:",
+        isReadOnly
+      );
       return;
     }
 
@@ -153,8 +160,11 @@ export function EditAppointmentModal({
     };
 
     console.log("[AGENDAMENTO] Dados atualizados:", updatedData);
-    console.log("[AGENDAMENTO] Nome do paciente que será setado:", updatedData.patient);
-    
+    console.log(
+      "[AGENDAMENTO] Nome do paciente que será setado:",
+      updatedData.patient
+    );
+
     // Atualiza o estado de forma explícita
     setFormData((prev) => {
       if (!prev) return null;
@@ -168,7 +178,7 @@ export function EditAppointmentModal({
       console.log("[AGENDAMENTO] Novo estado dentro do setFormData:", newData);
       return newData;
     });
-    
+
     setShowPatientSearch(false);
     setSearchTerm("");
   };
@@ -178,7 +188,7 @@ export function EditAppointmentModal({
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       // Não fecha se clicar dentro do container de busca ou no dropdown
-      if (!target.closest('.patient-search-container')) {
+      if (!target.closest(".patient-search-container")) {
         setShowPatientSearch(false);
       }
     };
@@ -186,30 +196,31 @@ export function EditAppointmentModal({
     if (showPatientSearch) {
       // Adiciona um pequeno delay para não fechar imediatamente ao clicar no campo
       const timeoutId = setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener("mousedown", handleClickOutside);
       }, 100);
-      
+
       return () => {
         clearTimeout(timeoutId);
-        document.removeEventListener('mousedown', handleClickOutside);
+        document.removeEventListener("mousedown", handleClickOutside);
       };
     }
   }, [showPatientSearch]);
 
-  const filteredPacientes = searchTerm.trim() === ""
-    ? pacientes // Se não há texto, mostra todos
-    : pacientes.filter(
-        (paciente) =>
-          paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          paciente.paciente?.cpf.includes(searchTerm.replace(/\D/g, ""))
-      );
+  const filteredPacientes =
+    searchTerm.trim() === ""
+      ? pacientes // Se não há texto, mostra todos
+      : pacientes.filter(
+          (paciente) =>
+            paciente.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            paciente.paciente?.cpf.includes(searchTerm.replace(/\D/g, ""))
+        );
 
   if (!isOpen || !formData) return null;
 
   const handleChange = (field: keyof AppointmentData, value: string) => {
     // Se for apenas leitura, bloqueamos a edição
     if (isReadOnly) return;
-    
+
     // Formatação de data (DD/MM)
     if (field === "date") {
       // Remove tudo que não é número
@@ -223,7 +234,7 @@ export function EditAppointmentModal({
         value = digits;
       }
     }
-    
+
     // Formatação de hora (HH:MM)
     if (field === "time") {
       // Remove tudo que não é número
@@ -237,7 +248,7 @@ export function EditAppointmentModal({
         value = digits;
       }
     }
-    
+
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
@@ -334,7 +345,7 @@ export function EditAppointmentModal({
             <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
               <User size={16} /> Dados do Paciente
             </h3>
-            
+
             {/* Busca de Paciente */}
             {!isReadOnly && (
               <div className="mb-4 relative patient-search-container">
@@ -365,13 +376,16 @@ export function EditAppointmentModal({
                     <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {filteredPacientes.length === 0 ? (
                         <div className="p-4 text-sm text-gray-500 text-center">
-                          {searchTerm ? "Nenhum paciente encontrado" : "Digite para buscar ou selecione abaixo"}
+                          {searchTerm
+                            ? "Nenhum paciente encontrado"
+                            : "Digite para buscar ou selecione abaixo"}
                         </div>
                       ) : (
                         <>
                           {!searchTerm && (
                             <div className="p-2 text-xs text-gray-500 bg-gray-50 border-b border-gray-200">
-                              {filteredPacientes.length} paciente(s) cadastrado(s)
+                              {filteredPacientes.length} paciente(s)
+                              cadastrado(s)
                             </div>
                           )}
                           {filteredPacientes.map((paciente) => (
@@ -381,7 +395,10 @@ export function EditAppointmentModal({
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                console.log("[AGENDAMENTO] Botão clicado para paciente:", paciente);
+                                console.log(
+                                  "[AGENDAMENTO] Botão clicado para paciente:",
+                                  paciente
+                                );
                                 handleSelectPatient(paciente);
                               }}
                               onMouseDown={(e) => {
@@ -406,25 +423,6 @@ export function EditAppointmentModal({
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-500 mb-1">
-                  ID Paciente
-                </label>
-                <div className="relative">
-                  <Hash
-                    size={12}
-                    className="absolute left-2 top-3 text-gray-400"
-                  />
-                  <input
-                    disabled={isReadOnly}
-                    className="w-full border rounded-lg p-2 pl-6 bg-gray-50 text-sm disabled:bg-gray-100 disabled:text-gray-500"
-                    value={formData.patientId || ""}
-                    onChange={(e) => handleChange("patientId", e.target.value)}
-                    placeholder="000"
-                  />
-                </div>
-              </div>
-
               <div className="md:col-span-6">
                 <label className="block text-sm font-semibold text-gray-500 mb-1">
                   Nome Completo
@@ -437,7 +435,9 @@ export function EditAppointmentModal({
                   placeholder="Selecione um paciente acima"
                 />
                 {formData?.patient && (
-                  <p className="text-xs text-green-600 mt-1">✓ Paciente selecionado</p>
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ Paciente selecionado
+                  </p>
                 )}
               </div>
 
@@ -473,7 +473,6 @@ export function EditAppointmentModal({
                   <option value="Outro">Outro</option>
                 </select>
               </div>
-
             </div>
           </div>
 
@@ -494,9 +493,17 @@ export function EditAppointmentModal({
                     handleChange("doctorId", e.target.value);
                     // Preenche especialidade automaticamente ao selecionar médico
                     if (e.target.value) {
-                      const medicoSelecionado = medicos.find(m => String(m.id) === e.target.value);
-                      if (medicoSelecionado && medicoSelecionado.especialidade) {
-                        handleChange("specialty", medicoSelecionado.especialidade);
+                      const medicoSelecionado = medicos.find(
+                        (m) => String(m.id) === e.target.value
+                      );
+                      if (
+                        medicoSelecionado &&
+                        medicoSelecionado.especialidade
+                      ) {
+                        handleChange(
+                          "specialty",
+                          medicoSelecionado.especialidade
+                        );
                       }
                     }
                   }}
@@ -504,7 +511,8 @@ export function EditAppointmentModal({
                   <option value="">Selecione um médico</option>
                   {medicos.map((medico) => (
                     <option key={medico.id} value={String(medico.id)}>
-                      {medico.nome} - CRM: {medico.crm || "N/A"} {medico.especialidade ? `(${medico.especialidade})` : ''}
+                      {medico.nome} - CRM: {medico.crm || "N/A"}{" "}
+                      {medico.especialidade ? `(${medico.especialidade})` : ""}
                     </option>
                   ))}
                 </select>

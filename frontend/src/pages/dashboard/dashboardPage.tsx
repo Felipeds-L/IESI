@@ -150,47 +150,69 @@ export default function DashboardPage() {
         const role = localStorage.getItem("userRole");
         const funcionarioId = localStorage.getItem("funcionarioId");
         setUserRole(role || "");
-        
+
         // Carrega TODOS os agendamentos (o filtro será aplicado no frontend)
         let url = "http://localhost:3000/agendamentos";
         // Não filtra no backend - vamos filtrar no frontend baseado no estado showOnlyMyAppointments
-        
+
         console.log("[DASHBOARD] Carregando agendamentos de:", url);
-        console.log("[DASHBOARD] userRole:", userRole, "funcionarioId:", funcionarioId);
+        console.log(
+          "[DASHBOARD] userRole:",
+          userRole,
+          "funcionarioId:",
+          funcionarioId
+        );
         const res = await fetch(url);
         if (!res.ok) {
-          console.error("[DASHBOARD] Erro na resposta:", res.status, res.statusText);
+          console.error(
+            "[DASHBOARD] Erro na resposta:",
+            res.status,
+            res.statusText
+          );
           throw new Error("Erro ao buscar agendamentos");
         }
 
         const data = await res.json();
         console.log("[DASHBOARD] Dados recebidos do backend:", data);
-        console.log("[DASHBOARD] Total de agendamentos recebidos:", data.length);
+        console.log(
+          "[DASHBOARD] Total de agendamentos recebidos:",
+          data.length
+        );
 
         // 🔥 Normalização dos dados vindos do backend
         const normalized = data.map((item: any) => ({
           id: item.id,
-          date: item.dataHora ? (() => {
-            const [datePart] = item.dataHora.split("T");
-            const [year, month, day] = datePart.split("-");
-            return `${day}/${month}`;
-          })() : "",
+          date: item.dataHora
+            ? (() => {
+                const [datePart] = item.dataHora.split("T");
+                const [year, month, day] = datePart.split("-");
+                return `${day}/${month}`;
+              })()
+            : "",
           time: item.dataHora?.split("T")[1]?.substring(0, 5) ?? "",
           patient: item.paciente?.pessoa?.nome ?? item.nomePaciente ?? "",
           doctor: item.funcionario?.crm ?? "", // aqui pode vir undefined
           specialty: item.especialidade ?? "",
           status: item.status ?? "",
           patientGender: item.paciente?.sexo ?? item.sexo ?? "",
-          patientAge: item.paciente?.dataNascimento 
+          patientAge: item.paciente?.dataNascimento
             ? (() => {
                 const hoje = new Date();
                 const nascimento = new Date(item.paciente.dataNascimento);
                 const idade = hoje.getFullYear() - nascimento.getFullYear();
                 const mes = hoje.getMonth() - nascimento.getMonth();
-                return String(mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate()) ? idade - 1 : idade);
+                return String(
+                  mes < 0 ||
+                    (mes === 0 && hoje.getDate() < nascimento.getDate())
+                    ? idade - 1
+                    : idade
+                );
               })()
-            : item.idade ? String(item.idade) : "",
-          patientGuardian: item.paciente?.responsavelNome ?? item.responsavelNome ?? "",
+            : item.idade
+            ? String(item.idade)
+            : "",
+          patientGuardian:
+            item.paciente?.responsavelNome ?? item.responsavelNome ?? "",
           problemDescription: item.descricao ?? "",
           procedureType: item.tipoConsulta ?? "",
           doctorId: item.funcionarioId ? String(item.funcionarioId) : "",
@@ -198,7 +220,10 @@ export default function DashboardPage() {
         }));
 
         console.log("[DASHBOARD] Agendamentos normalizados:", normalized);
-        console.log("[DASHBOARD] Total de agendamentos normalizados:", normalized.length);
+        console.log(
+          "[DASHBOARD] Total de agendamentos normalizados:",
+          normalized.length
+        );
         setAppointments(normalized);
       } catch (error) {
         console.error("[DASHBOARD] Erro ao carregar agendamentos:", error);
@@ -270,11 +295,11 @@ export default function DashboardPage() {
   const handleSaveAppointment = async (newAppointment: AppointmentData) => {
     try {
       console.log("[DASHBOARD] Salvando agendamento:", newAppointment);
-      
+
       // Valida data e hora
       console.log("[DASHBOARD] newAppointment.date:", newAppointment.date);
       console.log("[DASHBOARD] newAppointment.time:", newAppointment.time);
-      
+
       if (!newAppointment.date || !newAppointment.time) {
         console.error("[DASHBOARD] Data ou hora faltando!");
         toast.error("Data e hora são obrigatórias");
@@ -284,44 +309,57 @@ export default function DashboardPage() {
       // Monta dataHora (DD/MM + HH:mm → ISO)
       const dateParts = newAppointment.date.split("/");
       if (dateParts.length !== 2) {
-        console.error("[DASHBOARD] Formato de data inválido:", newAppointment.date);
+        console.error(
+          "[DASHBOARD] Formato de data inválido:",
+          newAppointment.date
+        );
         toast.error("Formato de data inválido. Use DD/MM");
         return;
       }
-      
+
       const [day, month] = dateParts;
       const year = new Date().getFullYear();
-      
+
       // Remove espaços e valida se a hora está no formato correto
       const timeStr = newAppointment.time.trim();
       const timeParts = timeStr.split(":");
       if (timeParts.length !== 2) {
-        console.error("[DASHBOARD] Formato de hora inválido:", newAppointment.time);
+        console.error(
+          "[DASHBOARD] Formato de hora inválido:",
+          newAppointment.time
+        );
         toast.error("Formato de hora inválido. Use HH:MM");
         return;
       }
-      
+
       const [hours, minutes] = timeParts;
-      
+
       // Valida se horas e minutos são números válidos
       if (isNaN(Number(hours)) || isNaN(Number(minutes))) {
-        console.error("[DASHBOARD] Hora ou minuto não é número:", hours, minutes);
+        console.error(
+          "[DASHBOARD] Hora ou minuto não é número:",
+          hours,
+          minutes
+        );
         toast.error("Hora e minuto devem ser números");
         return;
       }
-      
+
       if (Number(hours) < 0 || Number(hours) > 23) {
         toast.error("Hora deve estar entre 00 e 23");
         return;
       }
-      
+
       if (Number(minutes) < 0 || Number(minutes) > 59) {
         toast.error("Minutos devem estar entre 00 e 59");
         return;
       }
-      
-      const dataHora = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00.000Z`;
-      
+
+      const dataHora = `${year}-${month.padStart(2, "0")}-${day.padStart(
+        2,
+        "0"
+      )}T${hours.padStart(2, "0")}:${minutes.padStart(2, "0")}:00.000Z`;
+
       console.log("[DASHBOARD] Data/Hora montada:", dataHora);
       console.log("[DASHBOARD] Validação da data:", new Date(dataHora));
 
@@ -338,11 +376,6 @@ export default function DashboardPage() {
         nomePaciente: newAppointment.patient,
         funcionarioId: Number(newAppointment.doctorId),
       };
-
-      // Se tiver pacienteId, adiciona ao payload
-      if (newAppointment.patientId) {
-        payload.pacienteId = Number(newAppointment.patientId);
-      }
 
       const response = await fetch("http://localhost:3000/agendamentos", {
         method: "POST",
@@ -381,26 +414,35 @@ export default function DashboardPage() {
         problemDescription: created.descricao ?? "",
         procedureType: created.tipoConsulta ?? "",
         doctorId: created.funcionarioId ? String(created.funcionarioId) : "",
-        patientId: created.pacienteId ? String(created.pacienteId) : "",
       };
 
-      console.log("[DASHBOARD] Agendamento criado e normalizado:", normalizedCreated);
-      console.log("[DASHBOARD] Data formatada:", formattedDate, "Data selecionada:", selectedDate);
+      console.log(
+        "[DASHBOARD] Agendamento criado e normalizado:",
+        normalizedCreated
+      );
+      console.log(
+        "[DASHBOARD] Data formatada:",
+        formattedDate,
+        "Data selecionada:",
+        selectedDate
+      );
 
       // Recarrega a lista completa para garantir sincronização
       // Carrega TODOS os agendamentos (o filtro será aplicado no frontend)
       let url = "http://localhost:3000/agendamentos";
-      
+
       const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         const normalized = data.map((item: any) => ({
           id: item.id,
-          date: item.dataHora ? (() => {
-            const [datePart] = item.dataHora.split("T");
-            const [year, month, day] = datePart.split("-");
-            return `${day}/${month}`;
-          })() : "",
+          date: item.dataHora
+            ? (() => {
+                const [datePart] = item.dataHora.split("T");
+                const [year, month, day] = datePart.split("-");
+                return `${day}/${month}`;
+              })()
+            : "",
           time: item.dataHora?.split("T")[1]?.substring(0, 5) ?? "",
           patient: item.paciente?.pessoa?.nome ?? item.nomePaciente ?? "",
           doctor: item.funcionario?.crm ?? "",
@@ -415,7 +457,11 @@ export default function DashboardPage() {
           patientId: item.pacienteId ? String(item.pacienteId) : "",
         }));
         setAppointments(normalized);
-        console.log("[DASHBOARD] Lista recarregada com", normalized.length, "agendamentos");
+        console.log(
+          "[DASHBOARD] Lista recarregada com",
+          normalized.length,
+          "agendamentos"
+        );
       }
 
       toast.success("Agendamento criado!");
@@ -428,7 +474,9 @@ export default function DashboardPage() {
         errorMessage = error.message;
         if (errorMessage.includes("Paciente não encontrado")) {
           errorMessage = "Paciente não encontrado. Verifique o ID do paciente";
-        } else if (errorMessage.includes("data do agendamento deve ser futura")) {
+        } else if (
+          errorMessage.includes("data do agendamento deve ser futura")
+        ) {
           errorMessage = "A data do agendamento deve ser futura";
         } else if (errorMessage.includes("Data/hora inválida")) {
           errorMessage = "Data ou hora inválida. Verifique o formato";
@@ -441,11 +489,14 @@ export default function DashboardPage() {
   // 4. Filtragem e Paginação
 
   const getFilteredAppointments = () => {
-    console.log("[DASHBOARD] Filtrando agendamentos. Total:", appointments.length);
+    console.log(
+      "[DASHBOARD] Filtrando agendamentos. Total:",
+      appointments.length
+    );
     console.log("[DASHBOARD] activeTab:", activeTab);
     console.log("[DASHBOARD] selectedDate:", selectedDate);
     console.log("[DASHBOARD] searchTerm:", searchTerm);
-    
+
     let filtered = appointments.filter((item) => {
       const term = searchTerm.toLowerCase();
       return (
@@ -461,17 +512,34 @@ export default function DashboardPage() {
       const funcionarioId = localStorage.getItem("funcionarioId");
       filtered = filtered.filter((item) => {
         const matches = item.doctorId === funcionarioId;
-        console.log("[DASHBOARD] Filtro 'Meus Agendamentos':", item.doctorId, "===", funcionarioId, "=", matches);
+        console.log(
+          "[DASHBOARD] Filtro 'Meus Agendamentos':",
+          item.doctorId,
+          "===",
+          funcionarioId,
+          "=",
+          matches
+        );
         return matches;
       });
-      console.log("[DASHBOARD] Após filtro 'Meus Agendamentos':", filtered.length);
+      console.log(
+        "[DASHBOARD] Após filtro 'Meus Agendamentos':",
+        filtered.length
+      );
     }
 
     if (activeTab === "agendamentos") {
       filtered = filtered.filter((item) => {
         // A data já vem no formato DD/MM
         const matches = item.date === selectedDate;
-        console.log("[DASHBOARD] Comparando data:", item.date, "com", selectedDate, "=", matches);
+        console.log(
+          "[DASHBOARD] Comparando data:",
+          item.date,
+          "com",
+          selectedDate,
+          "=",
+          matches
+        );
         return matches;
       });
       console.log("[DASHBOARD] Após filtro de data:", filtered.length);
@@ -521,13 +589,17 @@ export default function DashboardPage() {
                   Agenda de Atendimentos
                 </h1>
                 <p className="text-purple-200">
-                  Data: <span className="font-semibold">{selectedDate}</span> • {appointments.filter(a => a.date === selectedDate).length} agendamentos
+                  Data: <span className="font-semibold">{selectedDate}</span> •{" "}
+                  {appointments.filter((a) => a.date === selectedDate).length}{" "}
+                  agendamentos
                 </p>
               </div>
               <div className="flex items-center gap-3">
                 {userRole === "medico" && (
                   <button
-                    onClick={() => setShowOnlyMyAppointments(!showOnlyMyAppointments)}
+                    onClick={() =>
+                      setShowOnlyMyAppointments(!showOnlyMyAppointments)
+                    }
                     className={`px-4 py-2 rounded font-medium transition flex items-center gap-2 ${
                       showOnlyMyAppointments
                         ? "bg-white text-purple-800"
