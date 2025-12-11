@@ -55,6 +55,23 @@ export class CreateAgendamentoUseCase {
 
     // Cria o agendamento
     const agendamento = await this.agendamentoRepository.create(data);
-    return agendamento;
+
+     const agendamentoCompleto = await prisma.agendamento.findUnique({
+      where: { id: agendamento.id },
+      include: {
+        funcionario: {
+          include: {
+            pessoa: true
+          }
+        },
+        paciente: {
+          include: {
+            pessoa: true
+          }
+        }
+      }
+    });
+
+    return agendamentoCompleto;
   }
 }

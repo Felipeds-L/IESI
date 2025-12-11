@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { EmailConfirmationModal } from "../../components/EmailConfirmationModal";
+
 import {
   Search,
   Plus,
@@ -119,6 +121,8 @@ const ITEMS_PER_PAGE = 6;
 
 export default function DashboardPage() {
   // 1. Estados de Controle
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [lastCreatedAppointment, setLastCreatedAppointment] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"agendamentos" | "historico">(
     "agendamentos"
   );
@@ -390,7 +394,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error("Erro ao criar agendamento");
 
       const created = await response.json();
-
+      const nomeDoMedico = created.funcionario?.pessoa?.nome || created.funcionario?.nome || "Médico Responsável";
       // 🔥 Normaliza o novo agendamento
       // Converte a data de YYYY-MM-DD para DD/MM
       let formattedDate = "";
@@ -426,9 +430,8 @@ export default function DashboardPage() {
         "Data selecionada:",
         selectedDate
       );
-
+     
       // Recarrega a lista completa para garantir sincronização
-      // Carrega TODOS os agendamentos (o filtro será aplicado no frontend)
       let url = "http://localhost:3000/agendamentos";
 
       const res = await fetch(url);
@@ -465,7 +468,19 @@ export default function DashboardPage() {
       }
 
       toast.success("Agendamento criado!");
-      setIsModalOpen(false);
+      setIsModalOpen(false); 
+
+      // PREPARA os dados para o e-mail
+      setLastCreatedAppointment({
+        pacienteNome: normalizedCreated.patient,
+        data: normalizedCreated.date,
+        hora: normalizedCreated.time,
+        medicoNome: `Dr(a). ${nomeDoMedico}` || "Médico Responsável", 
+        especialidade: normalizedCreated.specialty
+      });
+
+      // ABRE o modal de e-mail
+      setTimeout(() => setIsEmailModalOpen(true), 300);
     } catch (err) {
       console.error(err);
       // Mensagens de erro mais amigáveis
@@ -576,6 +591,12 @@ export default function DashboardPage() {
         onSave={handleSaveAppointment}
         isReadOnly={isReadOnly}
       />
+          <EmailConfirmationModal 
+      isOpen={isEmailModalOpen}
+      onClose={() => setIsEmailModalOpen(false)}
+      appointmentDetails={lastCreatedAppointment}
+      
+    />
 
       <Sidebar active="agenda" />
 

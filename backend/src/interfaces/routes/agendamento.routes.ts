@@ -33,4 +33,9 @@ agendamentoRoutes.get(
   agendamentoController.getAll.bind(agendamentoController)
 );
 
+agendamentoRoutes.post(
+  "/confirmacao",
+  agendamentoController.sendConfirmation.bind(agendamentoController)
+);
+
 export { agendamentoRoutes };
