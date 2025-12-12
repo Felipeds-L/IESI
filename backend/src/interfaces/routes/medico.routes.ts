@@ -166,22 +166,38 @@ medicoRoutes.put("/:id", async (req, res) => {
 medicoRoutes.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
+    const funcionarioId = Number(id);
 
     const funcionario = await prisma.funcionario.findUnique({
-      where: { id: Number(id) },
+      where: { id: funcionarioId },
     });
 
     if (!funcionario || funcionario.cargo !== "MEDICO") {
       return res.status(404).json({ error: "Médico não encontrado" });
     }
 
-    await prisma.pessoa.delete({
-      where: { id: funcionario.pessoaId },
+    
+    await prisma.$transaction(async (tx) => {
+      // 1. Deleta agendamentos vinculados ao médico
+      await tx.agendamento.deleteMany({
+        where: { funcionarioId: funcionarioId }
+      });
+
+      // 2. Deleta o registro de funcionário
+      await tx.funcionario.delete({
+        where: { id: funcionarioId },
+      });
+
+      // 3. Deleta o registro de pessoa (dados básicos)
+      await tx.pessoa.delete({
+        where: { id: funcionario.pessoaId },
+      });
     });
 
     return res.json({ message: "Médico deletado com sucesso" });
   } catch (error: any) {
-    return res.status(400).json({ error: error.message });
+    console.error("Erro ao deletar médico:", error);
+    return res.status(400).json({ error: "Erro ao deletar médico. Verifique se existem dependências." });
   }
 });
 
