@@ -54,11 +54,15 @@ export function Sidebar({ active }: SidebarProps) {
     return (
         <aside className="w-72 bg-white border-r border-gray-100 flex flex-col fixed h-full z-20">
             {/* Logo */}
-            <div className="p-8 flex items-center gap-3">
-                <div className="bg-purple-600 text-white p-2 rounded-xl">
-                    <Stethoscope size={24} />
+            <div className="p-6 flex items-center gap-4">
+                <div className="bg-gradient-to-br from-purple-600 to-purple-800 text-white p-3 rounded-2xl shadow-lg">
+                    <img 
+                        src="/asset/imagem_2025-12-12_144309060-removebg-preview.png" 
+                        alt="HeathLink Logo" 
+                        className="w-12 h-12 object-contain"
+                    />
                 </div>
-                <span className="text-xl font-bold text-gray-800 tracking-tight">Hospital Oliveira de Menezes</span>
+                <span className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent tracking-tight">HeathLink</span>
             </div>
 
             {/* Menu Itens */}

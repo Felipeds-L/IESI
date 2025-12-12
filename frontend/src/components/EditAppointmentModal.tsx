@@ -273,10 +273,10 @@ export function EditAppointmentModal({
         >
           <h2 className="text-xl font-bold flex items-center gap-2">
             {isReadOnly
-              ? "👁️ Prontuário (Visualização)"
+              ? "Prontuário (Visualização)"
               : isEditing
-              ? "✏️ Editar Prontuário"
-              : "➕ Novo Agendamento"}
+              ? "Editar Prontuário"
+              : "Novo Agendamento"}
           </h2>
           <button
             onClick={onClose}
@@ -436,7 +436,7 @@ export function EditAppointmentModal({
                 />
                 {formData?.patient && (
                   <p className="text-xs text-green-600 mt-1">
-                    ✓ Paciente selecionado
+                    Paciente selecionado
                   </p>
                 )}
               </div>
@@ -446,9 +446,10 @@ export function EditAppointmentModal({
                   Idade
                 </label>
                 <input
-                  disabled={isReadOnly}
+                  disabled={isReadOnly || !!formData?.patient}
+                  readOnly={!!formData?.patient}
                   type="text"
-                  className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100 disabled:text-gray-500"
+                  className="w-full border rounded-lg p-2 text-sm disabled:bg-gray-100 disabled:text-gray-500 cursor-not-allowed"
                   value={formData.patientAge || ""}
                   onChange={(e) => handleChange("patientAge", e.target.value)}
                   placeholder="Anos"
@@ -460,8 +461,8 @@ export function EditAppointmentModal({
                   Gênero
                 </label>
                 <select
-                  disabled={isReadOnly}
-                  className="w-full border rounded-lg p-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500"
+                  disabled={isReadOnly || !!formData?.patient}
+                  className="w-full border rounded-lg p-2 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-500 cursor-not-allowed"
                   value={formData.patientGender || ""}
                   onChange={(e) =>
                     handleChange("patientGender", e.target.value)

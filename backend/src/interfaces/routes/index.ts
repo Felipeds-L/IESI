@@ -8,7 +8,7 @@ import { medicoRoutes } from "./medico.routes";
 const routes = Router();
 
 routes.get("/", (req, res) => {
-  return res.json({ message: "IESI Hospital Backend ON! 🏥" });
+  return res.json({ message: "HeathLink Backend ON! 🏥" });
 });
 
 // Agora a rota principal é /pessoas

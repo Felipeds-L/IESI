@@ -158,14 +158,18 @@ const Login = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-purple-900 via-purple-900/80 to-transparent"></div>
 
         <div className="relative z-10 text-white space-y-6 max-w-md">
-          <div className="w-20 h-20 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl border border-white/20">
-            <Stethoscope className="w-10 h-10 text-white" />
+          <div className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl border-2 border-white/30 p-4">
+            <img 
+              src="/asset/imagem_2025-12-12_144309060-removebg-preview.png" 
+              alt="HeathLink Logo" 
+              className="w-full h-full object-contain"
+            />
           </div>
-          <h1 className="text-5xl font-bold leading-tight tracking-tight">
-            Hospital Oliveira de Menezes
+          <h1 className="text-6xl font-bold leading-tight tracking-tight">
+            HeathLink
           </h1>
           <p className="text-xl text-purple-100 leading-relaxed font-light">
-            Sistema Integrado de Gestão Hospitalar e Prontuários.
+            Sistema Integrado de Gestão de Saúde e Prontuários Eletrônicos.
           </p>
         </div>
       </div>
