@@ -2,9 +2,9 @@
 import { Router } from "express";
 import { AgendamentoRepositoryPrisma } from "../../infra/repositories/AgendamentoRepositoryPrisma";
 import { CreateAgendamentoUseCase } from "../../domain/usecases/CreateAgendamentoUseCase";
-
 import { PessoaController } from "../controllers/PessoaController";
 import { AgendamentoController } from "../controllers/AgendamentoController";
+import { UpdateAgendamentoUseCase } from "../../domain/usecases/UpdateAgendamentoUseCase";
 
 const agendamentoRoutes = Router();
 
@@ -16,11 +16,17 @@ const createAgendamentoUseCase = new CreateAgendamentoUseCase(
   agendamentoRepository
 );
 
+const updateAgendamentoUseCase = new UpdateAgendamentoUseCase(agendamentoRepository);
+
 // 3. Cria o Controller injetando OS DOIS Use Cases
 const agendamentoController = new AgendamentoController(
   createAgendamentoUseCase,
-  agendamentoRepository
+  agendamentoRepository,
+  updateAgendamentoUseCase
 );
+
+
+
 
 // 4. Define as rotas
 agendamentoRoutes.post(
@@ -42,5 +48,7 @@ agendamentoRoutes.delete(
   "/:id",
   agendamentoController.delete.bind(agendamentoController)
 );
+
+agendamentoRoutes.put("/:id", agendamentoController.update.bind(agendamentoController));
 
 export { agendamentoRoutes };

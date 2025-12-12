@@ -396,8 +396,21 @@ export default function DashboardPage() {
         funcionarioId: Number(newAppointment.doctorId),
       };
 
-      const response = await fetch("http://localhost:3000/agendamentos", {
-        method: "POST",
+     // 1. Verifica se é edição (tem ID e não é 0)
+      const isEditing = newAppointment.id && newAppointment.id !== 0;
+
+      // 2. Define a URL e o Método dinamicamente
+      const saveUrl = isEditing 
+        ? `http://localhost:3000/agendamentos/${newAppointment.id}` // Rota de Edição
+        : "http://localhost:3000/agendamentos";                     // Rota de Criação
+      
+      const method = isEditing ? "PUT" : "POST";
+
+      console.log(`[DASHBOARD] Enviando ${method} para ${saveUrl}`);
+
+      // 3. Faz a requisição usando as variáveis
+      const response = await fetch(saveUrl, {
+        method: method, 
         headers: {
           "Content-Type": "application/json",
         },
