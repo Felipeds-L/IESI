@@ -271,10 +271,25 @@ export default function DashboardPage() {
 
   // 3. Handlers de Ação
 
-  const handleDeleteAppointment = (id: number) => {
+  const handleDeleteAppointment = async (id: number) => {
     if (confirm("Tem certeza que deseja excluir este agendamento?")) {
-      setAppointments((prev) => prev.filter((app) => app.id !== id));
-      toast.success("Agendamento excluído.");
+      try {
+        // Chama a API para deletar no banco
+        const response = await fetch(`http://localhost:3000/agendamentos/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Falha ao excluir no servidor");
+        }
+
+        // Se deu certo, remove da tela
+        setAppointments((prev) => prev.filter((app) => app.id !== id));
+        toast.success("Agendamento excluído.");
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        toast.error("Erro ao excluir agendamento. Tente novamente.");
+      }
     }
   };
 

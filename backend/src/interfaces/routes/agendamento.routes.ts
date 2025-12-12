@@ -38,4 +38,9 @@ agendamentoRoutes.post(
   agendamentoController.sendConfirmation.bind(agendamentoController)
 );
 
+agendamentoRoutes.delete(
+  "/:id",
+  agendamentoController.delete.bind(agendamentoController)
+);
+
 export { agendamentoRoutes };

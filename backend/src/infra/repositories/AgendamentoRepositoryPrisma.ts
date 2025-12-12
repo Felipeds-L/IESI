@@ -61,4 +61,12 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
       },
     });
   }
+  
+  async delete(id: number): Promise<void> {
+    await prisma.agendamento.delete({
+      where: { id },
+    });
+  }
+
+  
 }

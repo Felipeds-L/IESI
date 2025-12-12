@@ -65,4 +65,16 @@ export class AgendamentoController {
       return res.status(500).json({ error: "Erro ao buscar agendamentos" });
     }
   }
+  
+  async delete(req: Request, res: Response) {
+    const id = Number(req.params.id);
+
+    try {
+      await this.agendamentoRepository.delete(id);
+      return res.status(200).json({ message: "Agendamento excluído com sucesso!" });
+    } catch (error: any) {
+      console.error("[BACKEND] Erro ao excluir agendamento:", error);
+      return res.status(400).json({ error: "Erro ao excluir agendamento." });
+    }
+  }
 }
