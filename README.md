@@ -1,4 +1,4 @@
-# IESI - Sistema de Gestão Hospitalar 🏥
+# IESI - Sistema de Gestão Hospitalar
 
 ![Status](https://img.shields.io/badge/Status-Funcional-brightgreen)
 ![Docker](https://img.shields.io/badge/Docker-Compose-blue)
