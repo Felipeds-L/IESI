@@ -2,11 +2,13 @@ import { EmailService } from "../../infra/services/EmailService";
 import { Request, Response } from "express";
 import { CreateAgendamentoUseCase } from "../../domain/usecases/CreateAgendamentoUseCase";
 import { AgendamentoRepositoryPrisma } from "../../infra/repositories/AgendamentoRepositoryPrisma";
+import { UpdateAgendamentoUseCase } from "../../domain/usecases/UpdateAgendamentoUseCase";
 
 export class AgendamentoController {
   constructor(
     private createAgendamentoUseCase: CreateAgendamentoUseCase,
-    private agendamentoRepository: AgendamentoRepositoryPrisma
+    private agendamentoRepository: AgendamentoRepositoryPrisma,
+    private updateAgendamentoUseCase: UpdateAgendamentoUseCase
   ) {}
 
   async sendConfirmation(req: Request, res: Response) {
@@ -65,4 +67,35 @@ export class AgendamentoController {
       return res.status(500).json({ error: "Erro ao buscar agendamentos" });
     }
   }
+
+  async delete(req: Request, res: Response) {
+    const id = Number(req.params.id);
+
+    try {
+      await this.agendamentoRepository.delete(id);
+      return res.status(200).json({ message: "Agendamento excluído com sucesso!" });
+    } catch (error: any) {
+      console.error("[BACKEND] Erro ao excluir agendamento:", error);
+      return res.status(400).json({ error: "Erro ao excluir agendamento." });
+    }
+  }
+
+ async update(req: Request, res: Response) {
+    const id = Number(req.params.id);
+    const data = req.body;
+
+    // Converte dataHora se vier como string
+    if (data.dataHora) {
+      data.dataHora = new Date(data.dataHora);
+    }
+
+    try {
+      const agendamento = await this.updateAgendamentoUseCase.execute(id, data);
+      return res.json(agendamento);
+    } catch (error: any) {
+      console.error("[BACKEND] Erro ao atualizar agendamento:", error);
+      return res.status(400).json({ error: error.message });
+    }
+  }
+   
 }

@@ -18,4 +18,6 @@ export interface IAgendamentoRepository {
   create(data: CreateAgendamentoDTO): Promise<Agendamento>;
   findAll(funcionarioId?: number): Promise<Agendamento[]>;
   findById(id: number): Promise<Agendamento | null>;
+  delete(id: number): Promise<void>;
+  update(id: number, data: Partial<CreateAgendamentoDTO>): Promise<Agendamento>;
 }

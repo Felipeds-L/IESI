@@ -271,10 +271,25 @@ export default function DashboardPage() {
 
   // 3. Handlers de Ação
 
-  const handleDeleteAppointment = (id: number) => {
+  const handleDeleteAppointment = async (id: number) => {
     if (confirm("Tem certeza que deseja excluir este agendamento?")) {
-      setAppointments((prev) => prev.filter((app) => app.id !== id));
-      toast.success("Agendamento excluído.");
+      try {
+        // Chama a API para deletar no banco
+        const response = await fetch(`http://localhost:3000/agendamentos/${id}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          throw new Error("Falha ao excluir no servidor");
+        }
+
+        // Se deu certo, remove da tela
+        setAppointments((prev) => prev.filter((app) => app.id !== id));
+        toast.success("Agendamento excluído.");
+      } catch (error) {
+        console.error("Erro ao excluir:", error);
+        toast.error("Erro ao excluir agendamento. Tente novamente.");
+      }
     }
   };
 
@@ -381,8 +396,21 @@ export default function DashboardPage() {
         funcionarioId: Number(newAppointment.doctorId),
       };
 
-      const response = await fetch("http://localhost:3000/agendamentos", {
-        method: "POST",
+     // 1. Verifica se é edição (tem ID e não é 0)
+      const isEditing = newAppointment.id && newAppointment.id !== 0;
+
+      // 2. Define a URL e o Método dinamicamente
+      const saveUrl = isEditing 
+        ? `http://localhost:3000/agendamentos/${newAppointment.id}` // Rota de Edição
+        : "http://localhost:3000/agendamentos";                     // Rota de Criação
+      
+      const method = isEditing ? "PUT" : "POST";
+
+      console.log(`[DASHBOARD] Enviando ${method} para ${saveUrl}`);
+
+      // 3. Faz a requisição usando as variáveis
+      const response = await fetch(saveUrl, {
+        method: method, 
         headers: {
           "Content-Type": "application/json",
         },

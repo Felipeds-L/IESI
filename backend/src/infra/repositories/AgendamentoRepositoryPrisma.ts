@@ -61,4 +61,37 @@ export class AgendamentoRepositoryPrisma implements IAgendamentoRepository {
       },
     });
   }
+  
+  async delete(id: number): Promise<void> {
+    await prisma.agendamento.delete({
+      where: { id },
+    });
+  }
+
+  async update(id: number, data: Partial<CreateAgendamentoDTO>): Promise<Agendamento> {
+    return await prisma.agendamento.update({
+      where: { id },
+      data: {
+        dataHora: data.dataHora,
+        status: data.status,
+        tipoConsulta: data.tipoConsulta,
+        especialidade: data.especialidade,
+        descricao: data.descricao,
+        sexo: data.sexo,
+        idade: data.idade,
+        responsavelNome: data.responsavelNome,
+        nomePaciente: data.nomePaciente,
+        funcionarioId: data.funcionarioId,
+        pacienteId: data.pacienteId,
+      },
+      include: {
+        funcionario: true,
+        paciente: {
+          include: {
+            pessoa: true,
+          },
+        },
+      },
+    });
+  }
 }
