@@ -10,7 +10,7 @@ O diferencial deste projeto é a adoção rigorosa da **Clean Architecture** (Ar
 
 ---
 
-## 🛠️ Tecnologias e Arquitetura
+## Tecnologias e Arquitetura
 
 O sistema foi desenhado para ser modular e escalável:
 
@@ -34,7 +34,7 @@ O sistema foi desenhado para ser modular e escalável:
 
 ---
 
-## 🚀 Como Rodar o Projeto
+## Como Rodar o Projeto
 
 Você não precisa instalar Node ou Postgres na sua máquina. Basta ter o **Docker** e o **Docker Compose**.
 
